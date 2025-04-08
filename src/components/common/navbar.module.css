@@ -1,0 +1,248 @@
+.navbar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 1000;
+  background: rgba(0, 0, 0, 0.735);
+  backdrop-filter: blur(8px);
+  padding: 1rem 4rem;
+  
+}
+
+.navbarContent {
+  max-width: 1200px;
+  margin: 0 auto;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.logo {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  text-decoration: none;
+}
+
+.logoImage {
+  width: 210px;
+  height: 56px;
+  object-fit: contain;
+  filter: brightness(0) invert(1);
+  transition: filter 0.3s ease;
+}
+
+.logoImage:hover {
+  filter: brightness(0) invert(1) opacity(0.8);
+}
+
+.logoText {
+  font-size: 1.5rem;
+  font-weight: bold;
+  color: white;
+}
+
+.navLinks {
+  display: flex;
+  gap: 2rem;
+  align-items: center;
+}
+
+.navLink {
+  color: white;
+  text-decoration: none;
+  font-size: 1rem;
+  font-weight: 500;
+  transition: color 0.3s ease;
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.navLink:hover {
+  color: #9B91AE;
+}
+
+.navLink::after {
+  content: '';
+  position: absolute;
+  width: 0;
+  height: 2px;
+  bottom: -4px;
+  left: 0;
+  background-color: #9B91AE;
+  transition: width 0.3s ease;
+}
+
+.navLink:hover::after {
+  width: 100%;
+}
+
+/* Auth Buttons */
+.authButtons {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+  margin-left: 1rem;
+}
+
+.loginButton {
+  color: white;
+  text-decoration: none;
+  font-size: 1rem;
+  font-weight: 500;
+  padding: 0.5rem 1rem;
+  border: 2px solid white;
+  border-radius: 0.5rem;
+  transition: all 0.3s ease;
+}
+
+.loginButton:hover {
+  background: rgba(255, 255, 255, 0.1);
+  transform: translateY(-2px);
+}
+
+.registerButton {
+  color: #1A1A1A;
+  background: white;
+  text-decoration: none;
+  font-size: 1rem;
+  font-weight: 500;
+  padding: 0.5rem 1rem;
+  border: 2px solid white;
+  border-radius: 0.5rem;
+  transition: all 0.3s ease;
+}
+
+.registerButton:hover {
+  background: rgba(255, 255, 255, 0.9);
+  transform: translateY(-2px);
+}
+
+/* Dropdown Menu Styles */
+.dropdownMenu {
+  display: none;
+  position: absolute;
+  top:115%;
+  left: 0;
+  background: white;
+  min-width: 186px;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  border-radius: 0.5rem;
+  overflow: hidden;
+  z-index: 1000;
+}
+
+/* Show dropdown on hover */
+.navLink:hover + .dropdownMenu,
+.dropdownMenu:hover {
+  display: block;
+}
+
+.dropdownItem {
+  display: block;
+  padding: 0.75rem 1rem;
+  color: #1A1A1A;
+  text-decoration: none;
+  transition: all 0.3s ease;
+}
+
+.dropdownItem:hover {
+  background-color: #f3f4f6;
+  color: #9B91AE;
+}
+
+.actionButton {
+  background: #9B91AE;
+  color: white;
+  padding: 0.75rem 1.5rem;
+  border-radius: 0.5rem;
+  font-weight: 600;
+  font-size: 1rem;
+  transition: all 0.3s ease;
+  border: none;
+  cursor: pointer;
+}
+
+.actionButton:hover {
+  background: #8A7F9E;
+  transform: translateY(-2px);
+}
+
+.mobileMenuButton {
+  display: none;
+  background: none;
+  border: none;
+  color: white;
+  cursor: pointer;
+  padding: 0.5rem;
+}
+
+@media (max-width: 1024px) {
+  .navbar {
+    padding: 1rem 2rem;
+  }
+}
+
+@media (max-width: 768px) {
+  .navbar {
+    padding: 1rem;
+  }
+
+  .navLinks {
+    display: none;
+  }
+
+  .mobileMenuButton {
+    display: block;
+  }
+
+  .navLinks.active {
+    display: flex;
+    flex-direction: column;
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    background: rgba(26, 26, 26, 0.95);
+    backdrop-filter: blur(8px);
+    padding: 1rem;
+    gap: 1rem;
+  }
+
+  .authButtons {
+    flex-direction: column;
+    width: 100%;
+    margin: 0;
+  }
+
+  .loginButton,
+  .registerButton {
+    width: 100%;
+    text-align: center;
+  }
+
+  .dropdownMenu {
+    position: static;
+    background: transparent;
+    box-shadow: none;
+    display: none;
+    margin-top: 0.5rem;
+  }
+
+  .dropdownMenu.active {
+    display: block;
+  }
+
+  .dropdownItem {
+    color: white;
+    padding: 0.5rem 1rem;
+  }
+
+  .dropdownItem:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+    color: #9B91AE;
+  }
+} 

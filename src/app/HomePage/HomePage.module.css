@@ -1,0 +1,217 @@
+/* Main Container */
+.homePage {
+  background: #fff;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Header Section */
+.header {
+  background: url('../../../public/manazerske-zrucnosti-kurz.jpg');
+  background-repeat: no-repeat;
+  background-size: 100% auto;
+  background-position: top center;
+  background-attachment: fixed;
+  position: relative;
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  padding: 0 4rem;
+  overflow: hidden;
+}
+
+.header::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(to right, rgba(0,0,0,0.7), rgba(0,0,0,0.4));
+  z-index: 1;
+}
+
+.headerContent {
+  position: relative;
+  z-index: 2;
+  max-width: 1200px;
+  margin: 0 auto;
+  width: 100%;
+}
+
+.headerText {
+  max-width: 600px;
+}
+
+.headerHeading {
+  font-size: 4rem;
+  font-weight: bold;
+  color: #fff;
+  margin-bottom: 1.5rem;
+  line-height: 1.2;
+}
+
+.headerDescription {
+  font-size: 1.25rem;
+  color: #fff;
+  margin-bottom: 2rem;
+}
+
+/* Action Buttons */
+.actions {
+  display: flex;
+  gap: 1rem;
+}
+
+.actionButton {
+  background: transparent;
+  color: white;
+  padding: 1rem 2rem;
+  border-radius: 0.5rem  ;
+  font-weight: 600;
+  font-size: 1.125rem;
+  transition: all 0.3s ease;
+  border: 2px solid white;
+}
+
+.actionButton:hover {
+  background: #979699;
+  transform: translateY(-2px);
+}
+
+/* Content Section */
+.contentSection {
+  padding: 5rem 4rem;
+  background: #fff;
+}
+
+.sectionTitle {
+  max-width: 800px;
+  margin: 0 auto;
+  text-align: center;
+  margin-bottom: 3rem;
+}
+
+.sectionHeading {
+  font-size: 2.5rem;
+  font-weight: bold;
+  color: #1A1A1A;
+  margin-bottom: 1rem;
+}
+
+.sectionText {
+  font-size: 1.125rem;
+  color: #666;
+  line-height: 1.6;
+}
+
+/* List Section */
+.list {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 2rem;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.listItem {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.listIcon {
+  width: 3rem;
+  height: 3rem;
+  background: #9B91AE;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.listText {
+  font-size: 1.125rem;
+  color: #1A1A1A;
+  font-weight: 500;
+}
+
+/* Dark Section */
+.darkSection {
+  background: #1A1A1A;
+  padding: 5rem 4rem;
+  color: white;
+}
+
+.darkSection .sectionHeading {
+  color: white;
+}
+
+.darkSection .sectionText {
+  color: #ccc;
+}
+
+/* Testimonials Section */
+.testimonials {
+  padding: 5rem 4rem;
+  background: #f8f8f8;
+}
+
+/* Footer Section */
+.footer {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 80px 64px;
+  gap: 43px;
+  position: absolute;
+  width: 1440px;
+  height: 434.14px;
+  left: calc(50% - 1440px/2);
+  top: 5151px;
+  background: #000000;
+}
+
+/* Responsive Design */
+@media (max-width: 1440px) {
+  .header {
+    background-size: cover;
+  }
+}
+
+@media (max-width: 1024px) {
+  .header {
+    padding: 0 2rem;
+  }
+
+  .headerHeading {
+    font-size: 3rem;
+  }
+
+  .list {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 768px) {
+  .header {
+    background-size: cover;
+    background-attachment: scroll;
+    padding: 0 2rem;
+  }
+
+  .headerHeading {
+    font-size: 2.5rem;
+  }
+
+  .list {
+    grid-template-columns: 1fr;
+  }
+
+  .contentSection,
+  .darkSection,
+  .testimonials {
+    padding: 3rem 1rem;
+  }
+} 

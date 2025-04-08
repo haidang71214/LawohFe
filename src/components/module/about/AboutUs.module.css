@@ -1,0 +1,145 @@
+.aboutUsPage {
+  padding-top: 0;
+}
+
+.missionVision {
+  max-width: 1200px;
+  margin: 0 auto;
+  text-align: center;
+  align-items: center;
+  padding-top: 100px;
+}
+
+.title {
+  font-size: 2.5rem;
+  font-weight: bold;
+  color: #333;
+  margin-bottom: 2rem;
+  text-transform: uppercase;
+}
+
+.title span {
+  font-weight: normal;
+}
+
+.content {
+  max-width: 900px;
+  margin: 0 auto;
+  text-align: justify;
+  line-height: 1.8;
+  
+}
+
+.missionText, .visionText {
+  margin-bottom: 1.5rem;
+  color: #333;
+}
+
+.statistics {
+  height: 60vh;
+  max-width: 1200px;
+  margin: 4rem auto;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 2rem;
+  align-items: center;
+  text-align: center;
+}
+
+.statsContent {
+  text-align: left;
+}
+
+.statsTitle {
+  font-size: 2rem;
+  color: #333;
+  margin-bottom: 1rem;
+}
+
+.statsDescription {
+  color: #666;
+  margin-bottom: 2rem;
+}
+
+.statsGrid {
+
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 2rem;
+}
+
+.statsItem {
+  text-align: left;
+}
+
+.statsItem h3 {
+  font-size: 2.5rem;
+  color: #333;
+  margin-bottom: 0.5rem;
+}
+
+.statsItem p {
+  color: #666;
+}
+
+.statsImage {
+  position: relative;
+  width: 100%;
+  overflow: hidden;
+  border-radius: 8px;
+}
+
+.statsImage img {
+  object-fit: cover;
+  width: 100%;
+  height: 100%;
+}
+
+.header {
+  position: relative;
+  background-image: url('../../../../public/law-firm.png');
+  background-repeat: no-repeat;
+  background-size: 100% auto;
+  background-position: top center;
+  background-attachment: fixed;
+  position: relative;
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  overflow: hidden;
+  color:white
+}
+
+.header::before {
+   content: '';
+   position: absolute;
+   top: 0;
+   left: 0;
+   right: 0;
+   bottom: 0;
+   background: linear-gradient(to right, rgba(0,0,0,0.7), rgba(0,0,0,0.4));
+   z-index: 1;
+}
+
+.headerContent {
+  position: relative;
+  z-index: 2;
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 0 20px;
+}
+
+.headerHeading {
+  font-size: 4rem;
+  font-weight: bold;
+  margin-bottom: 1.5rem;
+  line-height: 1.2;
+}
+
+.headerDescription {
+  font-size: 1.5rem;
+  line-height: 1.5;
+  max-width: 600px;
+  margin: 0 auto;
+}
+ 

@@ -1,0 +1,535 @@
+.services {
+  background: linear-gradient(
+    to right,
+    #1a1a1a,
+    #2c2c2c
+  );
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 6rem 2rem;
+  position: relative;
+}
+
+.services::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: repeating-linear-gradient(
+    90deg,
+    transparent 0px,
+    transparent 40px,
+    rgba(255, 255, 255, 0.03) 40px,
+    rgba(255, 255, 255, 0.03) 80px
+  );
+}
+
+.container {
+  max-width: 1440px;
+  margin: 0 auto;
+  position: relative;
+  z-index: 1;
+}
+
+.header {
+  text-align: left;
+  margin-bottom: 4rem;
+  color: white;
+  max-width: 800px;
+}
+
+.header h2 {
+  font-size: 3.5rem;
+  font-weight: 700;
+  margin-bottom: 1.5rem;
+  font-family: 'Merriweather', serif;
+  line-height: 1.2;
+}
+
+.header p {
+  font-size: 1.25rem;
+  color: #b3b3b3;
+  line-height: 1.6;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 2rem;
+}
+
+.card {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 1rem;
+  padding: 2rem;
+  transition: all 0.3s ease;
+  text-decoration: none;
+  color: white;
+}
+
+.card:hover {
+  background: rgba(255, 255, 255, 0.1);
+  transform: translateY(-4px);
+}
+
+.iconWrapper {
+  width: 3rem;
+  height: 3rem;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 0.75rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 1.5rem;
+}
+
+.icon {
+  font-size: 1.5rem;
+  color: white;
+}
+
+.card h3 {
+  font-size: 1.5rem;
+  font-weight: 600;
+  margin-bottom: 1rem;
+  color: white;
+}
+
+.card p {
+  font-size: 1rem;
+  line-height: 1.6;
+  color: #b3b3b3;
+  margin-bottom: 1.5rem;
+}
+
+.learnMore {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 1rem;
+  font-weight: 500;
+  color: white;
+}
+
+.learnMore svg {
+  transition: transform 0.3s ease;
+}
+
+.card:hover .learnMore svg {
+  transform: translateX(4px);
+}
+
+@media (max-width: 1024px) {
+  .grid {
+    grid-template-columns: 1fr;
+  }
+
+  .header h2 {
+    font-size: 2.5rem;
+  }
+}
+
+@media (max-width: 768px) {
+  .services {
+    padding: 4rem 1rem;
+  }
+
+  .header h2 {
+    font-size: 2rem;
+  }
+
+  .card {
+    padding: 1.5rem;
+  }
+
+  .card h3 {
+    font-size: 1.25rem;
+  }
+}
+
+.section1, .section2, .section3 {
+  min-height: 100vh;
+  position: relative;
+  background: repeating-linear-gradient(
+    90deg,
+    #fff 0px,
+    #fff 40px,
+    #ffebee 40px,
+    #ffebee 80px
+  );
+}
+
+.headerService {
+  height: 60vh;
+  background: url('../../../../public/charles-forerunner-3fPXt37X6UQ-unsplash.jpg');
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  background-repeat: no-repeat;
+  background-size: 100% auto;
+  background-position: top center;
+  background-attachment: fixed;
+  position: relative;
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  padding: 0 4rem;
+  overflow: hidden;
+}
+
+.overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 1;
+}
+
+.container {
+  max-width: 1440px;
+  margin: 0 auto;
+  padding: 0 2rem;
+  position: relative;
+  z-index: 2;
+}
+
+.heroContent {
+  text-align: center;
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+.heroContent h1 {
+  font-size: 3.5rem;
+  font-weight: 700;
+  margin-bottom: 1.5rem;
+  line-height: 1.2;
+}
+
+.heroContent p {
+  font-size: 1.25rem;
+  color: #b3b3b3;
+}
+
+.mainContent {
+  padding: 4rem 0;
+}
+
+.serviceSection {
+  background: white;
+  border-radius: 8px;
+
+  padding: 2rem;
+  margin-bottom: 3rem;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 2rem;
+  align-items: center;
+}
+
+.serviceContent {
+  padding: 2rem;
+}
+
+.serviceContent h2 {
+  font-size: 2rem;
+  margin-bottom: 1rem;
+  color: #333;
+}
+
+.serviceContent p {
+  color: #666;
+  margin-bottom: 1.5rem;
+  line-height: 1.6;
+}
+
+.serviceContent ul {
+  list-style: none;
+  padding: 0;
+  margin-bottom: 1.5rem;
+}
+
+.serviceContent li {
+  margin-bottom: 0.5rem;
+  color: #666;
+  display: flex;
+  align-items: center;
+}
+
+.serviceContent li:before {
+  content: "•";
+  color: #333;
+  margin-right: 0.5rem;
+}
+
+.actionButton {
+  background: #333;
+  color: white;
+  border: none;
+  padding: 0.75rem 1.5rem;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background 0.3s ease;
+}
+
+.actionButton:hover {
+  background: #444;
+}
+
+.serviceImage {
+  position: relative;
+  height: 600px;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.serviceImage img {
+  object-fit: cover;
+}
+
+/* Pricing Section */
+.pricing {
+  background: white;
+  border-radius: 12px;
+  padding: 3rem;
+  margin: 4rem auto;
+  max-width: 1200px;
+}
+
+.pricing h2 {
+  font-size: 2.5rem;
+  color: #333;
+  text-align: center;
+  margin-bottom: 0.5rem;
+}
+
+.pricing > p {
+  text-align: center;
+  color: #666;
+  margin-bottom: 3rem;
+}
+
+.pricingGrid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 2rem;
+}
+
+.pricingCard {
+  background: white;
+  border: 1px solid #eee;
+  border-radius: 8px;
+  padding: 2rem;
+  text-align: center;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.pricingCard:hover {
+  transform: translateY(-5px);
+}
+
+.pricingCard h3 {
+  font-size: 1.5rem;
+  color: #333;
+  margin-bottom: 0.5rem;
+}
+
+.subtitle {
+  color: #666;
+  font-size: 0.9rem;
+  margin-bottom: 1.5rem;
+}
+
+.price {
+  font-size: 2.5rem;
+  color: #333;
+  margin: 1.5rem 0;
+  line-height: 1;
+}
+
+.price span {
+  font-weight: bold;
+}
+
+.price p {
+  font-size: 0.9rem;
+  color: #666;
+  margin-top: 0.5rem;
+}
+
+.pricingCard ul {
+  list-style: none;
+  padding: 0;
+  margin: 2rem 0;
+  text-align: left;
+}
+
+.pricingCard li {
+  margin-bottom: 1rem;
+  color: #666;
+  display: flex;
+  align-items: flex-start;
+  font-size: 0.95rem;
+}
+
+.pricingCard li:before {
+  content: "✓";
+  color: #4CAF50;
+  margin-right: 0.5rem;
+  font-weight: bold;
+}
+
+.pricingCard button {
+  width: 100%;
+  background: #333;
+  color: white;
+  border: none;
+  padding: 1rem;
+  border-radius: 4px;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: background 0.3s ease;
+}
+
+.pricingCard button:hover {
+  background: #444;
+}
+
+/* Contact Form */
+.contactForm {
+  background: white;
+  border-radius: 12px;
+  margin: 4rem auto;
+  max-width: 1200px;
+}
+
+.contactForm h2 {
+  font-size: 2rem;
+  color: #333;
+  margin-bottom: 0.5rem;
+}
+
+.contactForm > p {
+  color: #666;
+  margin-bottom: 2rem;
+}
+
+.formContainer {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 3rem;
+  align-items: start;
+}
+
+.formContent {
+  flex: 1;
+}
+
+.formGroup {
+  margin-bottom: 1.5rem;
+}
+
+.formGroup label {
+  display: block;
+  margin-bottom: 0.5rem;
+  color: #333;
+  font-weight: 500;
+}
+
+.formGroup input,
+.formGroup textarea {
+  width: 100%;
+  padding: 0.75rem;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 1rem;
+  transition: border-color 0.3s ease;
+}
+
+.formGroup input:focus,
+.formGroup textarea:focus {
+  outline: none;
+  border-color: #333;
+}
+
+.formGroup textarea {
+  height: 150px;
+  resize: vertical;
+}
+
+.checkbox {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.checkbox input[type="checkbox"] {
+  width: auto;
+}
+
+.checkbox label {
+  margin: 0;
+  font-size: 0.9rem;
+  color: #666;
+}
+
+.submitButton {
+  background: #333;
+  color: white;
+  border: none;
+  padding: 0.75rem 2rem;
+  border-radius: 4px;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: background 0.3s ease;
+}
+
+.submitButton:hover {
+  background: #444;
+}
+
+.formImage {
+  position: relative;
+  height: 100%;
+  min-height: 400px;
+}
+
+@media (max-width: 1024px) {
+  .pricingGrid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1.5rem;
+  }
+
+  .formContainer {
+    grid-template-columns: 1fr;
+  }
+
+  .formImage {
+    display: none;
+  }
+}
+
+@media (max-width: 768px) {
+  .pricing,
+  .contactForm {
+    padding: 2rem;
+    margin: 2rem 1rem;
+  }
+
+  .pricingGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .pricing h2 {
+    font-size: 2rem;
+  }
+} 
