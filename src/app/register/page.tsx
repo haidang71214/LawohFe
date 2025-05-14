@@ -6,7 +6,7 @@ import React from 'react'
 export default function RegisterPage() {
   return (
    <div>
-      <Navbar/>
+         <Navbar/>
          <RegisterIndex/>
          <Footer/>
    </div>

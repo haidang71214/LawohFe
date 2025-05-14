@@ -1,14 +1,29 @@
-export enum LawyerCategories {
-   Insurance = 'Bảo hiểm',
-   Civil = 'Dân sự',
-   Land = 'Đất đai',
-   Business = 'Doanh nghiệp',
-   Transportation = 'Giao thông - Vận tải',
-   Administrative = 'Hành chính',
-   Criminal = 'Hình sự',
-   Family = 'Hôn nhân gia đình',
-   Labor = 'Lao động',
-   IntellectualProperty = 'Sở hữu trí tuệ',
-   Inheritance = 'Thừa kế - Di chúc',
-   Tax = 'Thuế'
- } 
+export enum LawyerCategories { // tiếng việt
+  INSURANCE = 'Bảo hiểm',
+   CIVIL = 'Dân sự',
+   LAND = 'Đất đai',
+   BUSINESS = 'Doanh nghiệp',
+   TRANSPORTATION = 'Giao thông - Vận tải',
+   ADMINISTRATIVE = 'Hành chính',
+   CRIMINAL = 'Hình sự',
+   FAMILY = 'Hôn nhân gia đình',
+   LABOR = 'Lao động',
+   INTELLECTUALPROPERTY = 'Sở hữu trí tuệ',
+   INHERITANCE = 'Thừa kế - Di chúc',
+   TAX = 'Thuế'
+ }  // tiếng anh 
+
+ export enum ETypeLawyer {
+  INSURANCE = 'INSURANCE',
+  CIVIL = 'CIVIL',
+  LAND = 'LAND',
+  CORPORATE = 'CORPORATE',
+  TRANSPORTATION = 'TRANSPORTATION',
+  ADMINISTRATIVE = 'ADMINISTRATIVE',
+  CRIMINAL = 'CRIMINAL',
+  FAMILY = 'FAMILY',
+  LABOR = 'LABOR',
+  INTELLECTUAL_PROPERTY = 'INTELLECTUAL_PROPERTY',
+  INHERITANCE = 'INHERITANCE',
+  TAX = 'TAX',
+}
