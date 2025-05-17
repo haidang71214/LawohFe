@@ -1,5 +1,7 @@
 "use client";
+import { USER_PROFILE } from '@/constant/enum';
 import { axiosInstance } from '@/fetchApi';
+import { Button, Card, CardBody, CardFooter, Image, Input, Link, Modal, ModalBody, ModalContent, ModalFooter, ModalHeader, Select, SelectItem, Textarea, useDisclosure } from '@heroui/react';
 import React, { useEffect, useState } from 'react';
 
 export enum LawyerCategories {
@@ -18,26 +20,72 @@ export enum LawyerCategories {
 }
 
 export default function ShittingFile() {
-  // Định nghĩa kiểu cho dữ liệu luật sư
+  interface LawyerType {
+    _id: string;
+    type: string[];
+    lawyer_id: string;
+    createdAt?: string;
+    updatedAt?: string;
+    __v?: number;
+  }
+
   interface Lawyer {
     _id: string;
     name: string;
     stars: number;
-    typeLawyer: string;
+    typeLawyer: LawyerType | string;
     role: string;
     province: string;
+    avartar_url: string;
   }
-
-  // State cho các bộ lọc
+  // nhớ set form
+  const [formData, setFormData] = useState({
+    client_id: '',
+    lawyer_id: '',
+    booking_start: '',
+    booking_end: '',
+    typeBooking: '',
+    note: '',
+  });
+  
+  // State cho các bộ lọc và phân trang
   const [stars, setStars] = useState<number | undefined>(undefined);
   const [typeLawyer, setTypeLawyer] = useState<string | undefined>(undefined);
   const [province, setProvince] = useState<string | undefined>(undefined);
+  const [page, setPage] = useState(1); // Trang hiện tại
+  const [limit] = useState(8); // Giới hạn 8 luật sư mỗi trang
+  const [total, setTotal] = useState(0); // Tổng số luật sư
 
   // State cho danh sách luật sư và trạng thái tải
   const [lawyers, setLawyers] = useState<Lawyer[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  console.log(lawyers);
+  const [bookedLawyerIds, setBookedLawyerIds] = useState<string[]>([]);
+
+  const fetchUserBookedLawyers = async () => {
+    try {
+      const userProfileStr = localStorage.getItem(USER_PROFILE) || '';
+      if (!userProfileStr) return;
+  
+      const userProfile = JSON.parse(userProfileStr) as { _id?: string };
+  
+      const heheId = userProfile._id;
+      if (!heheId) return;
+  
+      const response = await axiosInstance.get(`/users/getListBookingUser/${heheId}`);
+      if (Array.isArray(response.data)) {
+        const ids = response.data.map((item: any) => item.lawyer_id);
+        setBookedLawyerIds(ids);
+      }
+    } catch (error) {
+      console.error('Lỗi khi lấy danh sách booking của user:', error);
+    }
+  };
+  
+  
+  useEffect(() => {
+    fetchUserBookedLawyers();
+  }, []);
 
   // Các tùy chọn cho dropdown
   const starOptions = [1, 2, 3, 4, 5];
@@ -45,14 +93,36 @@ export default function ShittingFile() {
     value: key,
     label: value,
   }));
+  const {isOpen, onOpen, onOpenChange} = useDisclosure();
+
   const provinceOptions = ['Hà Nội', 'TP. Hồ Chí Minh', 'Đà Nẵng', 'Cần Thơ'];
+
+  // Add this function inside your ShittingFile component
+  const handleSubmit = async () => {
+    try {
+      const payload = {
+        ...formData,
+        lawyer_id: formData.lawyer_id || 'YOUR_LAWYER_ID',
+        client_id: formData.client_id || 'YOUR_CLIENT_ID',
+      };
+  
+      const response = await axiosInstance.post('/booking/userCreateBooking', payload);
+      console.log('Booking created successfully:', response.data);
+      alert('Đặt lịch thành công!');
+      onOpenChange();
+    } catch (error: any) {
+      console.error('Error creating booking:', error);
+      alert(error.response?.data?.message || 'Đặt lịch thất bại. Vui lòng thử lại.');
+    }
+  };
+  
 
   const fetchLawyers = async () => {
     setLoading(true);
     setError(null);
 
     try {
-      const params: Record<string, any> = {};
+      const params: Record<string, any> = { page, limit };
       if (stars !== undefined) params.stars = stars;
       if (typeLawyer && Object.keys(LawyerCategories).includes(typeLawyer)) {
         params.typeLawyer = typeLawyer;
@@ -60,18 +130,36 @@ export default function ShittingFile() {
       if (province) params.province = province;
 
       const response = await axiosInstance.get('/lawyer/filterLawyer', { params });
-      console.log('API Response:', response.data); // Log để kiểm tra cấu trúc dữ liệu
-      const lawyerData = response.data.data || response.data || [];
+      const { data: lawyerData, pagination } = response.data;
+
       if (Array.isArray(lawyerData)) {
-        const processedLawyers: Lawyer[] = lawyerData.map((item: any, index: number) => ({
-          _id: item._id || `temp-${index}`, // Sử dụng _id hoặc tạo tạm nếu thiếu
-          name: item.name || 'Tên không xác định',
-          stars: item.stars || 0,
-          typeLawyer: item.type || item.typeLawyer || 'UNKNOWN',
-          role: item.role || 'Không xác định',
-          province: item.province || 'Không xác định',
-        }));
+        const processedLawyers: Lawyer[] = lawyerData.map((item: any, index: number) => {
+          let typeLawyerValue: LawyerType | string = 'UNKNOWN';
+          if (item.typeLawyer && typeof item.typeLawyer === 'object' && item.typeLawyer.type) {
+            typeLawyerValue = {
+              _id: item.typeLawyer._id || `temp-type-${index}`,
+              type: item.typeLawyer.type || ['UNKNOWN'],
+              lawyer_id: item.typeLawyer.lawyer_id || item._id,
+              createdAt: item.typeLawyer.createdAt,
+              updatedAt: item.typeLawyer.updatedAt,
+              __v: item.typeLawyer.__v,
+            };
+          } else if (item.typeLawyer && typeof item.typeLawyer === 'string') {
+            typeLawyerValue = item.typeLawyer;
+          }
+
+          return {
+            _id: item._id || `temp-${index}`,
+            name: item.name || 'Tên không xác định',
+            stars: item.stars || 0,
+            typeLawyer: typeLawyerValue,
+            role: item.role || 'Không xác định',
+            province: item.province || 'Không xác định',
+            avartar_url: item.avartar_url || "null",
+          };
+        });
         setLawyers(processedLawyers);
+        setTotal(pagination?.total || 0);
       } else {
         throw new Error('Dữ liệu trả về từ API không phải là mảng.');
       }
@@ -81,21 +169,40 @@ export default function ShittingFile() {
       setLoading(false);
     }
   };
-
-  // Gọi fetchLawyers khi component mount hoặc các bộ lọc thay đổi
+  const handleChange = (field: string, value: string) => {
+    setFormData((prev) => ({ ...prev, [field]: value }));
+  };
+  
   useEffect(() => {
     fetchLawyers();
-  }, [stars, typeLawyer, province]);
+  }, [stars, typeLawyer, province, page]);
 
-  // Hàm chuyển đổi typeLawyer từ key sang value để hiển thị
-  const getTypeLawyerLabel = (typeLawyerValue: string | undefined): string => {
+  const getTypeLawyerLabel = (typeLawyerValue: LawyerType | string | undefined): string => {
     if (!typeLawyerValue) return 'Không xác định';
-    return LawyerCategories[typeLawyerValue as keyof typeof LawyerCategories] || typeLawyerValue;
+    if (typeof typeLawyerValue === 'string') {
+      return LawyerCategories[typeLawyerValue as keyof typeof LawyerCategories] || typeLawyerValue;
+    }
+    if (typeof typeLawyerValue === 'object' && Array.isArray(typeLawyerValue.type)) {
+      return typeLawyerValue.type
+        .map((type) => LawyerCategories[type as keyof typeof LawyerCategories] || type)
+        .join(', ');
+    }
+    return 'Không xác định';
   };
 
+  const totalPages = Math.ceil(total / limit);
+  const handlePrevious = () => {
+    if (page > 1) setPage(page - 1);
+  };
+  const handleNext = () => {
+    if (page < totalPages) setPage(page + 1);
+  };
+
+  
+
   return (
-    <div>
-      <div className="container mx-auto p-4">
+      <div className="mx-auto" style={{padding:'150px',backgroundColor:'#1A1A1A' }}>
+        {/*  */}
         <h1 className="text-2xl font-bold mb-4">Lọc danh sách luật sư</h1>
         <div className="flex flex-wrap gap-4 mb-6">
           <div>
@@ -150,21 +257,179 @@ export default function ShittingFile() {
           <p className="text-center text-gray-500">Không tìm thấy luật sư nào.</p>
         )}
         {!loading && !error && lawyers.length > 0 && (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div className="flex flex-wrap gap-4">
             {lawyers.map((lawyer) => (
-              <div key={lawyer._id} className="bg-white p-4 rounded-lg shadow-md">
-                <h2 className="text-lg font-semibold">{lawyer.name}</h2>
-                <p className="text-sm text-gray-600">
-                  Chuyên ngành: {getTypeLawyerLabel(lawyer.typeLawyer)}
-                </p>
-                <p className="text-sm text-gray-600">Khu vực: {lawyer.province}</p>
-                <p className="text-sm text-gray-600">Vai trò: {lawyer.role}</p>
-                <p className="text-sm text-yellow-500">{'★'.repeat(lawyer.stars)}</p>
-              </div>
+                <Card
+                className="py-4"
+                key={lawyer._id}
+                style={{
+                  width: '25%',
+                  boxSizing: 'border-box',
+                  backgroundColor: '#262626',
+                  borderRadius: '12px',
+                  boxShadow: '0 4px 8px rgba(0, 0, 0, 0.1)',
+                  textAlign: 'center',
+                  
+                }}
+              >
+                <CardBody className="overflow-visible py-2 pb-0 pt-2 px-4 flex-col items-center" style={{ display: 'flex', justifyContent: 'center' }}>
+                  <Image
+                    alt="Card background"
+                    className="object-cover rounded-xl "
+                    src={lawyer.avartar_url !== "null" ? lawyer.avartar_url : "/default-avatar.png"}
+                    width={250}
+                    height={200}
+                    loading="lazy"
+                    style={{borderRadius:'20px'}}
+                  />
+                </CardBody>
+                <CardFooter className="flex-col">
+                  <h2 className="text-lg font-semibold text-white">{lawyer.name}</h2>
+                  <p className="text-sm text-gray-600 text-white">
+                    Chuyên ngành: {getTypeLawyerLabel(lawyer.typeLawyer)}
+                  </p>
+                  <p className="text-sm text-white">Khu vực: {lawyer.province}</p>
+                  <p className="text-sm text-white">Vai trò: {lawyer.role}</p>
+                  <p className="text-sm text-yellow-500">{'★'.repeat(lawyer.stars)}</p>
+                  <div className="flex gap-2 mt-4">
+                    <Link
+                      href={`/lawyerDetail/${lawyer._id}`}
+                      style={{
+                        backgroundColor: '#3C3C3C',
+                        color: 'white',
+                        padding: '8px 16px',
+                        border: '1px solid black',
+                        borderRadius: '8px',
+                        fontSize: '14px',
+                      }}
+                    >
+                      Xem chi tiết luật sư
+                    </Link>
+                    <Button
+  color={bookedLawyerIds.includes(lawyer._id) ? 'secondary' : 'primary'}
+  disabled={bookedLawyerIds.includes(lawyer._id)}
+  style={{
+    backgroundColor: bookedLawyerIds.includes(lawyer._id) ? '#888888' : '#3C3C3C',
+    color: 'white',
+    padding: '8px 16px',
+    border: '1px solid black',
+    borderRadius: '8px',
+    fontSize: '14px',
+  }}
+  onPress={() => {
+    if (!bookedLawyerIds.includes(lawyer._id)) {
+      const userProfileStr = localStorage.getItem(USER_PROFILE) || "";
+      let clientId = "";
+      try {
+        const userProfile = JSON.parse(userProfileStr) as { _id?: string };
+        clientId = userProfile._id || "";
+      } catch {
+        console.error("Lỗi parse USER_PROFILE từ localStorage");
+      }
+      console.log("Client ID lấy được:", clientId);
+
+      setFormData((prev) => ({
+        ...prev,
+        client_id: clientId,
+        lawyer_id: lawyer._id,
+      }));
+      onOpen(); // Mở modal sau khi đã set form
+    }
+  }}
+>
+  {bookedLawyerIds.includes(lawyer._id) ? 'Đã đặt' : 'Tạo form đăng kí'}
+</Button>
+
+                 <Modal isOpen={isOpen} style={{backgroundColor:'white'}} placement="top-center" onOpenChange={onOpenChange}>
+        <ModalContent>
+          {(onClose) => (
+            <>
+              <ModalHeader className="flex flex-col gap-1">Đăng kí booking ngay</ModalHeader>
+              <ModalBody>
+                <div>Thời gian bắt đầu</div>
+              <Input
+                  type="datetime-local"
+                    value={formData.booking_start}
+                   onChange={(e) => handleChange('booking_start', e.target.value)}
+                                />
+              <div>Thời gian kết thúc</div>
+                <Input
+                    type="datetime-local"
+                    value={formData.booking_end}
+                    onChange={(e) => handleChange('booking_end', e.target.value)}
+                     />
+                     <div>chọn loại tư vấn</div>
+                     <Select
+                className="max-w-xs"
+                placeholder="Chọn kiểu tư vấn"
+                selectionMode="multiple"
+                selectedKeys={formData.typeBooking ? [formData.typeBooking] : []}
+                onSelectionChange={(keys) => handleChange('typeBooking', String(Array.from(keys)[0] || ''))}
+              >
+              {Object.entries(LawyerCategories).map(([key, label]) => (
+                                    <SelectItem style={{backgroundColor:'black',color:'white'}} key={key}>
+                                      {label}
+                                    </SelectItem>
+                                  ))}
+                          </Select>
+                        <Textarea
+                          label="Ghi chú"
+                          placeholder="Ghi chú cho luật sư..."
+                          value={formData.note}
+                          onChange={(e) => handleChange('note', e.target.value)}
+                        />
+                            </ModalBody>
+                            <ModalFooter>
+                              <Button color="danger" variant="flat" onPress={onClose}>
+                                Đóng form
+                              </Button>
+                              {bookedLawyerIds.includes(formData.lawyer_id) ? (
+                            <Button color="secondary" disabled>
+                                  Đã đặt
+                                          </Button>
+                            ) : (
+                               <Button color="primary" onPress={handleSubmit}>
+                               Đặt lịch ngay
+                                </Button>
+                                   )}
+                          </ModalFooter>
+                        </>
+                      )}
+                    </ModalContent>
+                  </Modal>
+                  </div>
+                </CardFooter>
+              </Card>
             ))}
           </div>
         )}
+        {!loading && !error && lawyers.length > 0 && (
+          <div className="flex justify-center mt-6 gap-4">
+            <button
+              onClick={handlePrevious}
+              disabled={page === 1}
+              className={`px-4 py-2 rounded-md ${
+                page === 1 ? 'bg-gray-300 cursor-not-allowed text-white' : 'bg-blue-500 text-white hover:bg-blue-600'
+              }`}
+            >
+              Trang trước
+            </button>
+            <span className="self-center text-white">
+              Trang {page} / {totalPages}
+            </span>
+            <button
+              onClick={handleNext}
+              disabled={page === totalPages}
+              className={`px-4 py-2 rounded-md ${
+                page === totalPages ? 'bg-gray-300 cursor-not-allowed text-white' : 'bg-blue-500 text-white hover:bg-blue-600'
+              }`}
+            >
+              Trang sau
+            </button>
+          </div>
+        )}
+        
       </div>
-    </div>
+
   );
 }

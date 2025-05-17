@@ -5,19 +5,17 @@ import Image from 'next/image';
 import styles from './navbar.module.css';
 import { LawyerCategories } from './EnumCommon';
 import { Button } from '@heroui/button';
-
 import { addToast } from '@heroui/toast';
 import { usePathname, useRouter } from 'next/navigation';
 import { LOGIN_USER, USER_PROFILE } from '@/constant/enum';
 import { axiosInstance } from '@/fetchApi';
 
-
 const Navbar = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isMounted, setIsMounted] = useState(false);
-  const router = useRouter()
-  // Đảm bảo trạng thái động chỉ được áp dụng sau khi hydration hoàn tất
+  const router = useRouter();
   const pathname = usePathname();
+
   useEffect(() => {
     setIsMounted(true);
   }, []);
@@ -25,54 +23,62 @@ const Navbar = () => {
   const toggleMobileMenu = () => {
     setIsMobileMenuOpen(!isMobileMenuOpen);
   };
+
   const [user, setUser] = useState<any>(null);
- 
+
   useEffect(() => {
     const fetchUserData = async () => {
       try {
-        const token = localStorage.getItem(LOGIN_USER); // Lấy token từ localStorage
+        const token = localStorage.getItem(LOGIN_USER);
         if (token) {
           const response = await axiosInstance.get('/auth/getMySelf', {
             headers: { Authorization: `Bearer ${token}` },
           });
-          const userData = response.data.data || response.data; // Giả định cấu trúc response
+          const userData = response.data.data || response.data;
           setUser(userData);
+
+          // Store user profile in localStorage as USER_PROFILE
+          localStorage.setItem(USER_PROFILE, JSON.stringify(userData));
         } else {
-          setUser(null); // Nếu không có token, set user là null
+          setUser(null);
+          localStorage.removeItem(USER_PROFILE);
         }
       } catch (err) {
         console.error('Failed to fetch user data:', err);
-        setUser(null); // Xử lý lỗi bằng cách set user là null
+        setUser(null);
+        localStorage.removeItem(USER_PROFILE);
       }
     };
 
     fetchUserData();
-  }, [pathname]); // Re-fetch khi route thay đổi
+  }, [pathname]);
 
   const handleUpdateInfo = () => {
-    router.push('/update-profile'); // Điều hướng đến trang cập nhật thông tin
+    router.push('/update-profile');
   };
-  const [isDropdownOpen, setIsDropdownOpen] = useState(false); // Để quản lý trạng thái của dropdown
-  const dropdownRef = useRef(null); // Tham chiếu đến dropdown
-  const avatarRef = useRef(null); // Tham chiếu đến avatar
-  // Hàm bật/tắt dropdown khi bấm vào avatar
+
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const dropdownRef = useRef(null);
+  const avatarRef = useRef(null);
+
   const toggleDropdown = () => setIsDropdownOpen(!isDropdownOpen);
 
-  // Hàm đi đến danh sách đặt (booking list)
   const handleBookingList = () => {
-    router.push('/booking-list'); // Điều hướng đến trang danh sách đặt
+    router.push('/booking-list');
   };
+
+  // New handler for Accepted Bookings
+  const handleAcceptedBookings = () => {
+    router.push('/booking-listForLaywer');
+  };
+
   const handleLogout = () => {
-    // Clear the local storage
-   localStorage.removeItem(LOGIN_USER);
-  localStorage.removeItem(USER_PROFILE);
+    localStorage.removeItem(LOGIN_USER);
+    localStorage.removeItem(USER_PROFILE);
+    setUser(null);
 
-  // Reset the user state to null after logout
-  setUser(null);
+    console.log(localStorage);
 
-  console.log(localStorage);
-    
-    // Show toast for successful logout
     addToast({
       title: "🎉 Đăng xuất thành công!",
       description: "Chúc bạn một ngày tốt lành! 💼",
@@ -81,8 +87,7 @@ const Navbar = () => {
       timeout: 3000,
     });
   };
-  
-  // Nếu chưa mounted, render HTML tĩnh giống server
+
   if (!isMounted) {
     return (
       <nav className={styles.navbar}>
@@ -179,7 +184,7 @@ const Navbar = () => {
       </nav>
     );
   }
-  // Sau khi mounted, render với trạng thái động
+
   return (
     <nav className={styles.navbar}>
       <div className={styles.navbarContent}>
@@ -257,51 +262,72 @@ const Navbar = () => {
             </Link>
           </div>
         </div>
-        <div style={{color:'white',display:'flex'}}>
-        {user ? (
-          <div
-            className="relative"
-            onMouseLeave={() => setIsDropdownOpen(false)} // Ẩn dropdown khi chuột di ra ngoài
-          >
-            {/* Avatar của người dùng */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '8px', borderRadius: '8px', transition: 'background 0.2s',fontFamily:'monospace' }}>
-            <img
-              src={user?.avartar_url}
-              width={40}
-              height={40}
-              alt="avatar"
-              className="rounded-full cursor-pointer"
-              onClick={toggleDropdown} // Khi bấm vào avatar, toggle dropdown
-              ref={avatarRef}
-            />
-            <div>
-            <div>{user.name}</div>
-            <div>{user.role}</div>
-            </div>
-            </div>
-            {isDropdownOpen && (
-              <div
-                ref={dropdownRef} // Đảm bảo dropdown có thể nhận sự kiện hover ra ngoài
-                className="absolute right-1 mt-0 w-48 bg-white shadow-lg rounded-lg z-10"
-              >
-                <Button onPress={handleUpdateInfo} fullWidth style={{color:'black'}}>Update Information</Button>
-                <Button onPress={handleBookingList} fullWidth style={{color:'black'}}>Booking List</Button>
-                <Button onPress={handleLogout} fullWidth style={{color:'black'}}>Đăng xuất</Button>
-              </div>
-            )}
-          </div>
-        ) : (
-          <div style={{color:'white',display:'flex'}}>
-          <Link href="/login" className={styles.navLink}>
-            Đăng nhập
-          </Link>
-          /
-          <Link href="/register" className={styles.navLink}>
-            Đăng kí
-          </Link>
-        </div>
-        )}
 
+        <div style={{ color: 'white', display: 'flex' }}>
+          {user ? (
+            <div
+              className="relative"
+              onMouseLeave={() => setIsDropdownOpen(false)}
+            >
+              <div
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '12px',
+                  padding: '8px',
+                  borderRadius: '8px',
+                  transition: 'background 0.2s',
+                  fontFamily: 'monospace',
+                }}
+              >
+                <img
+                  src={user?.avartar_url || '/default-avatar.png'} // Fallback avatar if avartar_url is missing
+                  width={40}
+                  height={40}
+                  alt="avatar"
+                  className="rounded-full cursor-pointer"
+                  onClick={toggleDropdown}
+                  ref={avatarRef}
+                />
+                <div>
+                  <div>{user.name}</div>
+                  <div>{user.role}</div>
+                </div>
+              </div>
+              {isDropdownOpen && (
+                <div
+                  ref={dropdownRef}
+                  className="absolute right-1 mt-0 w-48 bg-white shadow-lg rounded-lg z-10"
+                >
+                  <Button onPress={handleUpdateInfo} fullWidth style={{ color: 'black' }}>
+                    Update Information
+                  </Button>
+                  <Button onPress={handleBookingList} fullWidth style={{ color: 'black' }}>
+                    Booking đã gửi
+                  </Button>
+                  {/* Conditionally render "Booking đã nhận" for lawyers */}
+                  {user.role === 'lawyer' && (
+                    <Button onPress={handleAcceptedBookings} fullWidth style={{ color: 'black' }}>
+                      Booking đã nhận
+                    </Button>
+                  )}
+                  <Button onPress={handleLogout} fullWidth style={{ color: 'black' }}>
+                    Đăng xuất
+                  </Button>
+                </div>
+              )}
+            </div>
+          ) : (
+            <div style={{ color: 'white', display: 'flex' }}>
+              <Link href="/login" className={styles.navLink}>
+                Đăng nhập
+              </Link>
+              /
+              <Link href="/register" className={styles.navLink}>
+                Đăng kí
+              </Link>
+            </div>
+          )}
         </div>
       </div>
     </nav>

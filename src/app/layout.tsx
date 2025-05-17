@@ -32,6 +32,7 @@ export default function RootLayout({
       >
         {/* Correctly wrap your children with ToastProvider */}
         <Providers>
+          
           {children}
         </Providers>
       </body>

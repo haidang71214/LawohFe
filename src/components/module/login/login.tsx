@@ -32,7 +32,8 @@ export default function LoginIndex() {
 
       const profileRes = await axiosInstance.get("/auth/getMySelf");
       localStorage.setItem(USER_PROFILE, JSON.stringify(profileRes.data));
-
+      console.log(profileRes.data);
+      
       addToast({
         title: "🎉 Đăng nhập thành công!",
         description: "Chào mừng bạn đã trở lại 💼",
