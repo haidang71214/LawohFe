@@ -37,6 +37,7 @@ interface Booking {
   status: string;
   typeBooking: string;
   note: string;
+  income:number
   createdAt: string;
   updatedAt: string;
   __v: number;
@@ -140,7 +141,7 @@ const acceptBooking = async (booking: Booking) => {
  
      // ✅ Đúng method: PATCH
      // ✅ Đúng param: booking.client_id
-     const response = await axiosInstance.patch(`/booking/lawyerAcceptBooking/${booking.client_id}`, {
+     const response = await axiosInstance.patch(`/booking/lawyerAcceptBooking/${booking.client_id}/${booking._id}`, {
        lawyerId,
      });
  
@@ -167,21 +168,27 @@ const acceptBooking = async (booking: Booking) => {
       setError('Không tìm thấy thông tin luật sư, vui lòng đăng nhập lại!');
       return;
     }
-
+  
     try {
       setUpdating(booking._id);
-      console.log(`Rejecting booking for client ${booking.client_id} by lawyer ${lawyerId}`);
-      const response = await axiosInstance.put(`/booking/rejectBooking/${booking.client_id}`, {
+      console.log(`Accepting booking for client ${booking.client_id} by lawyer ${lawyerId}`);
+  
+      // ✅ Đúng method: PATCH
+      // ✅ Đúng param: booking.client_id, truyền vào booking_id cho reject luôn, vì nếu không có booking id thì nó sẽ hơi ngơ
+      const response = await axiosInstance.patch(`/booking/rejectBooking/${booking.client_id}/${booking._id}`, {
         lawyerId,
       });
-      console.log('Reject response:', response.data);
+  
+      console.log('Accept response:', response.data);
       await fetchBookings();
     } catch (err: any) {
-      console.error('Error rejecting booking:', err.response?.data || err.message);
+      console.error('Error accepting booking:', err.response?.data || err.message);
       if (err.response?.status === 401) {
         setError('Phiên đăng nhập đã hết hạn, vui lòng đăng nhập lại!');
+      } else if (err.response?.status === 404) {
+        setError('API không tồn tại, kiểm tra lại đường dẫn hoặc backend!');
       } else {
-        setError('Từ chối booking thất bại, vui lòng thử lại!');
+        setError('Chấp nhận booking thất bại, vui lòng thử lại!');
       }
     } finally {
       setUpdating(null);
@@ -202,7 +209,7 @@ const acceptBooking = async (booking: Booking) => {
   return (
     <div
       style={{
-        maxWidth: '1000px',
+        maxWidth: '90%',
         margin: 'auto',
         padding: 20,
         marginTop: 70,
@@ -253,6 +260,7 @@ const acceptBooking = async (booking: Booking) => {
             <TableColumn style={{ padding: '12px 8px' }}>Trạng thái</TableColumn>
             <TableColumn style={{ padding: '12px 8px' }}>Hành động</TableColumn>
             <TableColumn style={{ padding: '12px 8px' }}>Ghi chú</TableColumn>
+            <TableColumn style={{ padding: '12px 8px' }}>Thu nhập ước tính</TableColumn>
             <TableColumn style={{ padding: '12px 8px' }}>Ngày tạo</TableColumn>
           </TableHeader>
           <TableBody>
@@ -341,13 +349,15 @@ const acceptBooking = async (booking: Booking) => {
                         </button>
                       </div>
                     ) : (
-                      'đã accept hoặc reject'
+                      `- đã ${b.status}`
                     )}
                   </TableCell>
                   <TableCell style={{ padding: '10px 8px' }}>{b.note ?? ''}</TableCell>
+                  <TableCell>{isNaN(b.income) ? 'Không xác định' : (b.income * 0.9).toLocaleString('vi-VN', { style: 'currency', currency: 'VND' })}</TableCell>
                   <TableCell style={{ padding: '10px 8px' }}>
                     {b.createdAt ? new Date(b.createdAt).toLocaleString() : ''}
                   </TableCell>
+                  
                 </TableRow>
               );
             })}

@@ -71,7 +71,11 @@ const Navbar = () => {
   const handleAcceptedBookings = () => {
     router.push('/booking-listForLaywer');
   };
-
+  // cập nhật thông tin với vai trò luật sư
+  const detailLaywerInforMation = () =>{
+    // thấy thông tin cá nhân luôn
+    router.push('/update-LawyerDetailInformation')
+  }
   const handleLogout = () => {
     localStorage.removeItem(LOGIN_USER);
     localStorage.removeItem(USER_PROFILE);
@@ -300,7 +304,7 @@ const Navbar = () => {
                   className="absolute right-1 mt-0 w-48 bg-white shadow-lg rounded-lg z-10"
                 >
                   <Button onPress={handleUpdateInfo} fullWidth style={{ color: 'black' }}>
-                    Update Information
+                    Cập nhật thông tin
                   </Button>
                   <Button onPress={handleBookingList} fullWidth style={{ color: 'black' }}>
                     Booking đã gửi
@@ -309,6 +313,11 @@ const Navbar = () => {
                   {user.role === 'lawyer' && (
                     <Button onPress={handleAcceptedBookings} fullWidth style={{ color: 'black' }}>
                       Booking đã nhận
+                    </Button>
+                  )}
+                   {user.role === 'lawyer' && (
+                    <Button onPress={detailLaywerInforMation} fullWidth style={{ color: 'black' }}>
+                      Cập nhật với vai trò luật sư
                     </Button>
                   )}
                   <Button onPress={handleLogout} fullWidth style={{ color: 'black' }}>

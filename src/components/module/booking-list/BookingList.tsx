@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
-import { Table, TableHeader, TableColumn, TableBody, TableRow, TableCell } from '@heroui/react';
+import { Table, TableHeader, TableColumn, TableBody, TableRow, TableCell, Button, addToast, Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, Input, Textarea } from '@heroui/react';
 import { USER_PROFILE } from '@/constant/enum';
 import { axiosInstance } from '@/fetchApi';
 
@@ -34,6 +34,10 @@ export default function BookingList() {
   const [error, setError] = useState<string | null>(null);
   const [clientId, setClientId] = useState<string | null>(null);
   const [lawyerNames, setLawyerNames] = useState<Record<string, string>>({});
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [selectedBookingId, setSelectedBookingId] = useState<string | null>(null);
+  const [rating, setRating] = useState<number>(0);
+  const [comment, setComment] = useState<string>('');
 
   // Get clientId from localStorage
   useEffect(() => {
@@ -56,10 +60,10 @@ export default function BookingList() {
       try {
         setLoading(true);
         setError(null);
-        const response = await axiosInstance.get(
-          `/users/getListBookingUser/${clientId}`
-        );
+        const response = await axiosInstance.get(`/users/getListBookingUser/${clientId}`);
+        console.log(response);
         setBookings(response.data);
+        
       } catch (err: any) {
         console.error('Error fetching bookings:', err);
         setError('Lấy danh sách booking thất bại, vui lòng thử lại!');
@@ -70,6 +74,116 @@ export default function BookingList() {
 
     fetchBookings();
   }, [clientId]);
+
+  const handleDeleteBooking = async (bookingId: string) => {
+    try {
+      const response = await axiosInstance.delete(`/booking/userCancelBooking/${bookingId}`);
+      addToast({
+        title: `${response.data}`,
+        color: 'success',
+        variant: 'flat',
+        timeout: 4000,
+      });
+      setBookings(bookings.filter((b) => b._id !== bookingId));
+    } catch (err: any) {
+      const msg = err.response?.data || 'Lỗi khi xóa lịch, vui lòng thử lại';
+      if (err.response?.status === 409) {
+        addToast({
+          title: msg,
+          color: 'warning',
+          variant: 'flat',
+          timeout: 6000,
+        });
+      } else {
+        addToast({
+          title: msg,
+          color: 'danger',
+          variant: 'flat',
+          timeout: 4000,
+        });
+      }
+    }
+  };
+
+  const handlePayment = async (bookingId: string, amount: number) => {
+    try {
+      console.log(amount);
+      const response = await axiosInstance.post('/payment/create-payment-url', {
+        amount: amount,
+        orderInfo: `Thanh toan cho booking ${bookingId}`,
+        orderType: 'booking',
+        bookingId: bookingId,
+      });
+      const paymentUrl = response.data.paymentUrl;
+      window.open(paymentUrl, '_blank');
+      addToast({
+        title: 'Đã tạo liên kết thanh toán, vui lòng kiểm tra!',
+        color: 'success',
+        variant: 'flat',
+        timeout: 4000,
+      });
+    } catch (err: any) {
+      const msg = err.response?.data || 'Lỗi khi tạo thanh toán, vui lòng thử lại';
+      addToast({
+        title: msg,
+        color: 'danger',
+        variant: 'flat',
+        timeout: 4000,
+      });
+    }
+  };
+
+  const handleReview = (bookingId: string) => {
+    setSelectedBookingId(bookingId);
+    setIsModalOpen(true);
+  };
+
+
+  // chỗ này nó đang lấy bookingId, nhưng cái mình cần là lawyer id
+  const handleSubmitReview = async () => {
+    if (!selectedBookingId || rating === 0 || !comment.trim()) {
+      addToast({
+        title: 'Vui lòng nhập đầy đủ đánh giá và bình luận!',
+        color: 'warning',
+        variant: 'flat',
+        timeout: 4000,
+      });
+      return;
+    }
+
+    try {
+      // nhận id của thằng luật sư
+      await axiosInstance.post(`/review/${selectedBookingId}`, {
+        rating,
+        comment,
+      });
+      addToast({
+        title: 'Đánh giá thành công!',
+        color: 'success',
+        variant: 'flat',
+        timeout: 4000,
+      });
+      setIsModalOpen(false);
+      setRating(0);
+      setComment('');
+      setSelectedBookingId(null);
+    } catch (err: any) {
+      const msg = err.response?.data || 'Lỗi khi gửi đánh giá, vui lòng thử lại!';
+      addToast({
+        title: msg,
+        color: 'danger',
+        variant: 'flat',
+        timeout: 4000,
+      });
+    }
+  };
+
+  const handleCloseModal = () => {
+    setIsModalOpen(false);
+    setRating(0);
+    setComment('');
+    setSelectedBookingId(null);
+  };
 
   // Fetch lawyer names for lawyer_ids that don't have names yet
   useEffect(() => {
@@ -119,6 +233,7 @@ export default function BookingList() {
   return (
     <div
       style={{
+        height: '70vh',
         maxWidth: '1000px',
         margin: 'auto',
         padding: 20,
@@ -138,7 +253,7 @@ export default function BookingList() {
           fontSize: '1.8rem',
         }}
       >
-        Danh sách Booking
+        Danh sách đặt lịch
       </h2>
       {loading && <p>Đang tải dữ liệu...</p>}
       {error && <p style={{ color: 'red' }}>{error}</p>}
@@ -170,6 +285,8 @@ export default function BookingList() {
             <TableColumn style={{ padding: '12px 8px' }}>Trạng thái</TableColumn>
             <TableColumn style={{ padding: '12px 8px' }}>Ghi chú</TableColumn>
             <TableColumn style={{ padding: '12px 8px' }}>Ngày tạo</TableColumn>
+            <TableColumn style={{ padding: '12px 8px' }}>Chi phí cần trả</TableColumn>
+            <TableColumn style={{ padding: '12px 8px' }}>Hành động</TableColumn>
           </TableHeader>
           <TableBody>
             {bookings.map((b: any, index: number) => {
@@ -221,12 +338,77 @@ export default function BookingList() {
                   <TableCell style={{ padding: '10px 8px' }}>
                     {b.createdAt ? new Date(b.createdAt).toLocaleString() : ''}
                   </TableCell>
+                  <TableCell>
+                    {new Intl.NumberFormat('vi-VN').format(b.income)} VND
+                  </TableCell>
+                  <TableCell style={{ padding: '10px 8px' }}>
+                    {b.status === 'accept' && (
+                      <Button
+                        color="primary"
+                        onClick={() => handlePayment(b._id, b.income || 0)}
+                        style={{ marginRight: '8px' }}
+                      >
+                        Thanh toán
+                      </Button>
+                    )}
+                    {b.status === 'done' && (
+                      <Button
+                        style={{ backgroundColor: '#ccc' }}
+                        color="success"
+                        onClick={() => handleReview(b.lawyer_id)}
+                      >
+                        Đánh giá
+                      </Button>
+                    )}
+                    <Button
+                      style={{ backgroundColor: '#ccc' }}
+                      color="danger"
+                      onClick={() => handleDeleteBooking(b._id)}
+                      disabled={b.status === 'rejected'}
+                      title={b.status === 'rejected' ? 'Đã bị từ chối, không thể xóa' : 'Xóa lịch'}
+                    >
+                      Xóa lịch
+                    </Button>
+                  </TableCell>
                 </TableRow>
               );
             })}
           </TableBody>
         </Table>
       )}
+
+      {/* Modal for Review */}
+      <Modal isOpen={isModalOpen} onClose={handleCloseModal}>
+  <ModalContent>
+    <ModalHeader>Đánh giá lịch hẹn</ModalHeader>
+    <ModalBody>
+      <label>Đánh giá</label>
+      <Input
+        type="number"
+        value={rating.toString()} // Chuyển đổi number sang string
+        onChange={(e) => setRating(Math.max(1, Math.min(5, Number(e.target.value))))}
+        min={1}
+        max={5}
+        style={{ marginBottom: '10px' }}
+      />
+      <label>Nhận xét chất lượng:</label>
+      <Textarea
+        value={comment}
+        onChange={(e) => setComment(e.target.value)}
+        rows={4}
+        style={{ marginBottom: '10px' }}
+      />
+    </ModalBody>
+    <ModalFooter>
+      <Button color="danger" onClick={handleCloseModal} style={{ marginRight: '8px' }}>
+        Hủy
+      </Button>
+      <Button color="success" onClick={handleSubmitReview}>
+        Gửi đánh giá
+      </Button>
+    </ModalFooter>
+  </ModalContent>
+</Modal>
     </div>
   );
 }

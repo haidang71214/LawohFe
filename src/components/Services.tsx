@@ -16,7 +16,7 @@ const Services = () => {
       icon: <FaBalanceScale />,
       title: 'Thuê luật sư (Hire a Lawyer)',
       description: 'Liên hệ với các luật sư uy tín, phù hợp với mong muốn của bạn',
-      link: '/hire-lawyer'
+      link: '/lawyers'
     },
     {
       icon: <FaFileAlt />,

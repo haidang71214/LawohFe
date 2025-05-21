@@ -1,8 +1,10 @@
+"use client"
 import Footer from '@/components/common/footer'
 import Navbar from '@/components/common/navbar'
 import React from 'react'
 import styles from './Services.module.css'
 import Image from 'next/image'
+import { Link } from '@heroui/react'
 
 export default function Services() {
   return (
@@ -75,7 +77,9 @@ export default function Services() {
                 <li>Áp giá luật sư phù hợp</li>
                 <li>Đảm bảo chất lượng dịch vụ</li>
               </ul>
-              <button className={styles.actionButton}>Xem thêm</button>
+              <Link href={`/lawyers`} className={`${styles.navLink} flex items-center gap-2`}>
+              Thử đi
+            </Link>
             </div>
           </div>
    <hr/>

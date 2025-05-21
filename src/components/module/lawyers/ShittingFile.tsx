@@ -1,7 +1,7 @@
 "use client";
 import { USER_PROFILE } from '@/constant/enum';
 import { axiosInstance } from '@/fetchApi';
-import { Button, Card, CardBody, CardFooter, Image, Input, Link, Modal, ModalBody, ModalContent, ModalFooter, ModalHeader, Select, SelectItem, Textarea, useDisclosure } from '@heroui/react';
+import { addToast, Button, Card, CardBody, CardFooter, Image, Input, Link, Modal, ModalBody, ModalContent, ModalFooter, ModalHeader, Select, SelectItem, Textarea, useDisclosure } from '@heroui/react';
 import React, { useEffect, useState } from 'react';
 
 export enum LawyerCategories {
@@ -55,6 +55,7 @@ export default function ShittingFile() {
   const [page, setPage] = useState(1); // Trang hiện tại
   const [limit] = useState(8); // Giới hạn 8 luật sư mỗi trang
   const [total, setTotal] = useState(0); // Tổng số luật sư
+  const [isSuccess, setIsSuccess] = useState(false); // Thêm state để kiểm tra khi thành công
 
   // State cho danh sách luật sư và trạng thái tải
   const [lawyers, setLawyers] = useState<Lawyer[]>([]);
@@ -85,7 +86,8 @@ export default function ShittingFile() {
   
   useEffect(() => {
     fetchUserBookedLawyers();
-  }, []);
+    setIsSuccess(false);
+  }, [isSuccess]);
 
   // Các tùy chọn cho dropdown
   const starOptions = [1, 2, 3, 4, 5];
@@ -95,27 +97,55 @@ export default function ShittingFile() {
   }));
   const {isOpen, onOpen, onOpenChange} = useDisclosure();
 
-  const provinceOptions = ['Hà Nội', 'TP. Hồ Chí Minh', 'Đà Nẵng', 'Cần Thơ'];
+  const provinceOptions =['Hà Nội', 'TP. Hồ Chí Minh', 'Đà Nẵng', 'An Giang', 'Bà Rịa - Vũng Tàu',   'Bắc Giang', 'Bắc Kạn', 'Bạc Liêu', 'Bắc Ninh', 'Bến Tre', 'Bình Dương', 'Bình Định', 'Bình Phước', 'Bình Thuận', 'Cao Bằng', 'Cần Thơ', 'Cà Mau', 'Đắk Lắk', 'Đắk Nông', 'Điện Biên', 'Đồng Nai', 'Đồng Tháp', 'Gia Lai', 'Hà Giang', 'Hà Nam', 'Hà Tĩnh', 'Hải Dương', 'Hải Phòng', 'Hòa Bình', 'Hậu Giang', 'Hưng Yên', 'Khánh Hòa', 'Kiên Giang','Kon Tum', 'Lai Châu', 'Lâm Đồng', 'Lạng Sơn', 'Lào Cai', 'Long An', 'Nam Định', 'Nghệ An', 'Ninh Bình', 'Ninh Thuận', 'Phú Thọ', 'Phú Yên', 'Quảng Bình', 'Quảng Nam', 'Quảng Ngãi', 'Quảng Ninh', 'Quảng Trị', 'Sóc Trăng', 'Sơn La', 'Tây Ninh', 'Thái Bình', 'Thái Nguyên', 'Thanh Hóa', 'Thừa Thiên - Huế', 'Tiền Giang', 'Tuyên Quang', 'Vĩnh Long', 'Vĩnh Phúc', 'Yên Bái'];
 
   // Add this function inside your ShittingFile component
-  const handleSubmit = async () => {
-    try {
-      const payload = {
-        ...formData,
-        lawyer_id: formData.lawyer_id || 'YOUR_LAWYER_ID',
-        client_id: formData.client_id || 'YOUR_CLIENT_ID',
-      };
-  
-      const response = await axiosInstance.post('/booking/userCreateBooking', payload);
-      console.log('Booking created successfully:', response.data);
-      alert('Đặt lịch thành công!');
-      onOpenChange();
-    } catch (error: any) {
-      console.error('Error creating booking:', error);
-      alert(error.response?.data?.message || 'Đặt lịch thất bại. Vui lòng thử lại.');
-    }
-  };
-  
+// Function to submit booking and show Toasts for success or failure
+const handleSubmit = async () => {
+  // Kiểm tra đầy đủ các trường
+  if (!formData.client_id || !formData.lawyer_id || !formData.booking_start || !formData.booking_end) {
+   addToast({
+           title: "❌ Lỗi Nhập Liệu!",
+           description: "Vui lòng điền đầy đủ các trường thông tin!",
+           color: "danger",
+           variant: "flat",
+           timeout: 4000,
+         });
+    return;
+  }
+
+  try {
+    const payload = {
+      ...formData,
+      lawyer_id: formData.lawyer_id || 'YOUR_LAWYER_ID',
+      client_id: formData.client_id || 'YOUR_CLIENT_ID',
+    };
+
+    const response = await axiosInstance.post('/booking/userCreateBooking', payload);
+    console.log('Booking created successfully:', response.data);
+
+    // Hiển thị toast thành công
+    addToast({
+      title: "🎉 Tạo form thành công!",
+      description: "xin vui lòng đợi luật sư phản hồi",
+      color: "success",
+      variant: "flat",
+      timeout: 3000,
+    });
+    setIsSuccess(true);
+    onOpenChange(); // Đóng modal sau khi thành công
+  } catch (error: any) {
+    console.error('Error creating booking:', error);
+    addToast({
+            title: "❌ Lỗi nhập liệu",
+            description: "Bạn kiểm tra lại form",
+            color: "danger",
+            variant: "flat",
+            timeout: 4000,
+          });
+  }
+};
+
 
   const fetchLawyers = async () => {
     setLoading(true);
@@ -131,7 +161,8 @@ export default function ShittingFile() {
 
       const response = await axiosInstance.get('/lawyer/filterLawyer', { params });
       const { data: lawyerData, pagination } = response.data;
-
+      console.log(stars);
+      
       if (Array.isArray(lawyerData)) {
         const processedLawyers: Lawyer[] = lawyerData.map((item: any, index: number) => {
           let typeLawyerValue: LawyerType | string = 'UNKNOWN';
@@ -206,11 +237,11 @@ export default function ShittingFile() {
         <h1 className="text-2xl font-bold mb-4">Lọc danh sách luật sư</h1>
         <div className="flex flex-wrap gap-4 mb-6">
           <div>
-            <label className="block text-sm font-medium text-gray-700">Số sao</label>
+            <label  className="block text-sm font-medium text-gray-700 ">Số sao</label>
             <select
               value={stars ?? ''}
               onChange={(e) => setStars(e.target.value ? Number(e.target.value) : undefined)}
-              className="mt-1 p-2 border rounded-md w-40"
+              className="mt-1 p-2 border rounded-md w-40 text-black"
             >
               <option value="">Tất cả</option>
               {starOptions.map((star) => (
@@ -225,7 +256,7 @@ export default function ShittingFile() {
             <select
               value={typeLawyer ?? ''}
               onChange={(e) => setTypeLawyer(e.target.value || undefined)}
-              className="mt-1 p-2 border rounded-md w-40"
+              className="mt-1 p-2 border rounded-md w-40 text-black"
             >
               <option value="">Tất cả</option>
               {typeLawyerOptions.map((option) => (
@@ -240,7 +271,7 @@ export default function ShittingFile() {
             <select
               value={province ?? ''}
               onChange={(e) => setProvince(e.target.value || undefined)}
-              className="mt-1 p-2 border rounded-md w-40"
+              className="mt-1 p-2 border rounded-md w-40 text-black"
             >
               <option value="">Tất cả</option>
               {provinceOptions.map((prov) => (
@@ -340,7 +371,7 @@ export default function ShittingFile() {
   {bookedLawyerIds.includes(lawyer._id) ? 'Đã đặt' : 'Tạo form đăng kí'}
 </Button>
 
-                 <Modal isOpen={isOpen} style={{backgroundColor:'white'}} placement="top-center" onOpenChange={onOpenChange}>
+    <Modal isOpen={isOpen} style={{backgroundColor:'white'}} placement="top-center" onOpenChange={onOpenChange}>
         <ModalContent>
           {(onClose) => (
             <>
@@ -386,7 +417,7 @@ export default function ShittingFile() {
                               {bookedLawyerIds.includes(formData.lawyer_id) ? (
                             <Button color="secondary" disabled>
                                   Đã đặt
-                                          </Button>
+                            </Button>
                             ) : (
                                <Button color="primary" onPress={handleSubmit}>
                                Đặt lịch ngay
