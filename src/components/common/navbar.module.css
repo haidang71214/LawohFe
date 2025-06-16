@@ -7,7 +7,7 @@
   background: rgba(0, 0, 0, 0.735);
   backdrop-filter: blur(8px);
   padding: 1rem 4rem;
-  
+  margin-bottom: 100px;
 }
 
 .navbarContent {

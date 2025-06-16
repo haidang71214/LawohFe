@@ -1,12 +1,14 @@
 import Navbar from '@/components/common/navbar'
-import AdminDashboard from '@/components/module/admin/adminIndex'
+import NavbarSider from '@/components/common/NavbarSider'
+import ManagerFormIndex from '@/components/module/admin/ManagerForm'
 import React from 'react'
 
-export default function page() {
+export default function ManagerFormPage() {
   return (
     <div>
       <Navbar/>
-      <AdminDashboard/> 
+      <NavbarSider/>
+      <ManagerFormIndex/>
     </div>
   )
 }

@@ -31,9 +31,17 @@ export default function LoginIndex() {
       localStorage.setItem(LOGIN_USER, token);
 
       const profileRes = await axiosInstance.get("/auth/getMySelf");
-      localStorage.setItem(USER_PROFILE, JSON.stringify(profileRes.data));
-      console.log(profileRes.data);
-      
+      const userData = profileRes.data;
+      localStorage.setItem(USER_PROFILE, JSON.stringify(userData));
+      console.log(userData);
+
+      // Chỉ chuyển hướng một lần dựa trên role
+      if (userData.role === "admin") {
+        router.push("/admin");
+      } else {
+        router.push("/");
+      }
+
       addToast({
         title: "🎉 Đăng nhập thành công!",
         description: "Chào mừng bạn đã trở lại 💼",
@@ -41,17 +49,12 @@ export default function LoginIndex() {
         variant: "flat",
         timeout: 3000,
       });
-
-      router.push("/");
     } catch (err: any) {
-      const errorMessage =
-        err?.response?.data?.message ||
-        err?.message ||
-        "Có lỗi xảy ra. Vui lòng thử lại.";
-
+      console.log(err);
+      
       addToast({
         title: "❌ Lỗi đăng nhập!",
-        description: errorMessage,
+        description: 'sai tên đăng nhập hoặc mật khẩu',
         color: "danger",
         variant: "flat",
         timeout: 4000,

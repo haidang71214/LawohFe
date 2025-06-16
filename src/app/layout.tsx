@@ -4,6 +4,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import '../../src/output.css';
 import Providers from "./provider";
+import { ChatProvider } from "@/components/common/chatContext";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -32,8 +33,9 @@ export default function RootLayout({
       >
         {/* Correctly wrap your children with ToastProvider */}
         <Providers>
-          
+        <ChatProvider>
           {children}
+          </ChatProvider>
         </Providers>
       </body>
     </html>

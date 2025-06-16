@@ -13,9 +13,8 @@ import {
   CardBody,
   Button,
 } from '@heroui/react';
-import { axiosInstance } from '@/fetchApi';
 import { LOGIN_USER } from '@/constant/enum';
-import NavbarSider from '@/components/common/NavbarSider';
+import { axiosInstance } from '@/fetchApi';
 
 interface UserInfo {
   _id: string;
@@ -47,7 +46,8 @@ export default function AdminDashboard() {
       const res = await axiosInstance.get('/payment/getPaymentForAdmin', {
         headers: { Authorization: `Bearer ${token}` },
       });
-
+      console.log(res);
+      
       setPayments(res.data?.data || []);
     } catch (err) {
       console.error('Lỗi lấy danh sách payment:', err);
@@ -69,7 +69,8 @@ export default function AdminDashboard() {
       await axiosInstance.patch(`/payment/refundToLawyer/${paymentId}`, {}, {
         headers: { Authorization: `Bearer ${token}` },
       });
-
+     
+      
       alert('✅ Đã trả tiền cho luật sư!');
       await fetchPayments();
     } catch (err) {
@@ -82,7 +83,6 @@ export default function AdminDashboard() {
 
   return (
     <div style={{ padding: 40, marginTop: 60 }}>
-      <NavbarSider />
       <div style={{ marginLeft: 240, padding: 20, width: '80%' }}>
         <Card>
           <CardHeader className="text-xl font-bold text-blue-600">

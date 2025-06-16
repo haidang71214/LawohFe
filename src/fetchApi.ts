@@ -29,9 +29,8 @@ const extendToken = async () => {
          { withCredentials: true }
       );
       return data?.newAccessToken; // Return the new access token
-   } catch (error) {
-      console.error("Error extending token:", error);
-      throw error;
+   } catch{
+   
    }
 };
 
@@ -50,7 +49,7 @@ axiosInstance.interceptors.response.use(
                return axiosInstance(originalRequest); // Retry the original request
             }
          } catch (err) {
-            console.error("Token renewal failed:", err);
+            console.log("Token renewal failed:", err);
          }
       }
 

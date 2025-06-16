@@ -1,4 +1,6 @@
-"use client";
+// components/Navbar.tsx
+'use client';
+
 import React, { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
@@ -9,12 +11,17 @@ import { addToast } from '@heroui/toast';
 import { usePathname, useRouter } from 'next/navigation';
 import { LOGIN_USER, USER_PROFILE } from '@/constant/enum';
 import { axiosInstance } from '@/fetchApi';
+import { Avatar } from '@heroui/react';
+import SliderChatUser from './SliderChatUser';
+import UserChatLawyer from './userChatLawyer';
+import { useChat } from './chatContext';
 
 const Navbar = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isMounted, setIsMounted] = useState(false);
   const router = useRouter();
   const pathname = usePathname();
+  const { isChatOpen, currentConversationId, currentLawyerId, openChat, closeChat } = useChat();
 
   useEffect(() => {
     setIsMounted(true);
@@ -36,15 +43,13 @@ const Navbar = () => {
           });
           const userData = response.data.data || response.data;
           setUser(userData);
-
-          // Store user profile in localStorage as USER_PROFILE
           localStorage.setItem(USER_PROFILE, JSON.stringify(userData));
         } else {
           setUser(null);
           localStorage.removeItem(USER_PROFILE);
         }
       } catch (err) {
-        console.error('Failed to fetch user data:', err);
+        console.log('Failed to fetch user data:', err);
         setUser(null);
         localStorage.removeItem(USER_PROFILE);
       }
@@ -67,22 +72,18 @@ const Navbar = () => {
     router.push('/booking-list');
   };
 
-  // New handler for Accepted Bookings
   const handleAcceptedBookings = () => {
     router.push('/booking-listForLaywer');
   };
-  // cập nhật thông tin với vai trò luật sư
-  const detailLaywerInforMation = () =>{
-    // thấy thông tin cá nhân luôn
-    router.push('/update-LawyerDetailInformation')
-  }
+
+  const detailLaywerInforMation = () => {
+    router.push('/update-LawyerDetailInformation');
+  };
+
   const handleLogout = () => {
     localStorage.removeItem(LOGIN_USER);
     localStorage.removeItem(USER_PROFILE);
     setUser(null);
-
-    console.log(localStorage);
-
     addToast({
       title: "🎉 Đăng xuất thành công!",
       description: "Chúc bạn một ngày tốt lành! 💼",
@@ -106,7 +107,6 @@ const Navbar = () => {
               priority
             />
           </Link>
-
           <button className={styles.mobileMenuButton}>
             <svg
               xmlns="http://www.w3.org/2000/svg"
@@ -124,7 +124,6 @@ const Navbar = () => {
               <line x1="3" y1="18" x2="21" y2="18" />
             </svg>
           </button>
-
           <div className={styles.navLinks}>
             <Link href="/" className={styles.navLink}>
               Trang chủ
@@ -134,21 +133,23 @@ const Navbar = () => {
             </Link>
             <div className="relative group">
               <button className={`${styles.navLink} flex items-center gap-2`}>
-                Dịch vụ
+                Mẫu đơn từ
                 <svg width="13" height="10" viewBox="0 0 13 10" fill="none">
-                  <path d="M6.5 10L0.5 0H12.5L6.5 10Z" fill="currentColor"/>
+                  <path d="M6.5 10L0.5 0H12.5L6.5 10Z" fill="currentColor" />
                 </svg>
               </button>
               <div className={styles.dropdownMenu}>
-                <Link href="/services" className={styles.dropdownItem}>Tổng quan</Link>
-                <Link href="/consultationAI" className={styles.dropdownItem}>Tư vấn với AI</Link>
-                <Link href="/courses" className={styles.dropdownItem}>Khóa học</Link>
-                <Link href="/documents" className={styles.dropdownItem}>Mẫu đơn từ</Link>
-                <Link href="/packages" className={styles.dropdownItem}>Gói dịch vụ</Link>
-                <Link href="/hire-lawyer" className={styles.dropdownItem}>Thuê luật sư</Link>
+                {Object.entries(LawyerCategories).map(([key, value]) => (
+                  <Link
+                    key={key}
+                    href={`/document/${key}`}
+                    className={styles.dropdownItem}
+                  >
+                    {value}
+                  </Link>
+                ))}
               </div>
             </div>
-
             <Link href="/contact" className={styles.navLink}>
               Liên hệ
             </Link>
@@ -159,14 +160,14 @@ const Navbar = () => {
               <button className={`${styles.navLink} flex items-center gap-2`}>
                 Luật sư tốt theo lĩnh vực
                 <svg width="13" height="10" viewBox="0 0 13 10" fill="none">
-                  <path d="M6.5 10L0.5 0H12.5L6.5 10Z" fill="currentColor"/>
+                  <path d="M6.5 10L0.5 0H12.5L6.5 10Z" fill="currentColor" />
                 </svg>
               </button>
               <div className={styles.dropdownMenu}>
                 {Object.entries(LawyerCategories).map(([key, value]) => (
                   <Link
                     key={key}
-                    href={`/lawyers/${key.toLowerCase()}`}
+                    href={`/lawyers/${key}`}
                     className={styles.dropdownItem}
                   >
                     {value}
@@ -175,7 +176,7 @@ const Navbar = () => {
               </div>
             </div>
           </div>
-          <div style={{color:'white',display:'flex'}}>
+          <div style={{ color: 'white', display: 'flex' }}>
             <Link href="/login" className={styles.navLink}>
               Đăng nhập
             </Link>
@@ -239,26 +240,28 @@ const Navbar = () => {
           </Link>
           <div className="relative group">
             <button className={`${styles.navLink} flex items-center gap-2`}>
-              Dịch vụ
+              Mẫu đơn từ
               <svg width="13" height="10" viewBox="0 0 13 10" fill="none">
-                <path d="M6.5 10L0.5 0H12.5L6.5 10Z" fill="currentColor"/>
+                <path d="M6.5 10L0.5 0H12.5L6.5 10Z" fill="currentColor" />
               </svg>
             </button>
             <div className={styles.dropdownMenu}>
-              <Link href="/services" className={styles.dropdownItem}>Tổng quan</Link>
-              <Link href="/consultationAI" className={styles.dropdownItem}>Tư vấn với AI</Link>
-              <Link href="/courses" className={styles.dropdownItem}>Khóa học</Link>
-              <Link href="/documents" className={styles.dropdownItem}>Mẫu đơn từ</Link>
-              <Link href="/packages" className={styles.dropdownItem}>Gói dịch vụ</Link>
-              <Link href="/hire-lawyer" className={styles.dropdownItem}>Thuê luật sư</Link>
+              {Object.entries(LawyerCategories).map(([key, value]) => (
+                <Link
+                  key={key}
+                  href={`/document/${key}`}
+                  className={styles.dropdownItem}
+                >
+                  {value}
+                </Link>
+              ))}
             </div>
           </div>
-
-          <Link href="/contact" className={styles.navLink}>
-            Liên hệ
+          <Link href="/course" className={styles.navLink}>
+            Video
           </Link>
-          <Link href="/blog" className={styles.navLink}>
-            Tin tức
+          <Link href="/ai" className={styles.navLink}>
+            AI
           </Link>
           <div className="relative group">
             <Link href={`/lawyers`} className={`${styles.navLink} flex items-center gap-2`}>
@@ -284,24 +287,36 @@ const Navbar = () => {
                   fontFamily: 'monospace',
                 }}
               >
-                <img
-                  src={user?.avartar_url || '/default-avatar.png'} // Fallback avatar if avartar_url is missing
-                  width={40}
-                  height={40}
+                <Avatar
+                  src={user?.avartar_url || '/default-avatar.png'}
                   alt="avatar"
                   className="rounded-full cursor-pointer"
                   onClick={toggleDropdown}
                   ref={avatarRef}
+                  isBordered
+                  color="default"
                 />
                 <div>
                   <div>{user.name}</div>
                   <div>{user.role}</div>
                 </div>
+                <div>
+                <Button
+                  onClick={() => openChat(null, '')} // Open SliderChatUser without a specific conversation
+                  style={{ marginLeft: '10px' }}
+                >
+                  Chat
+                </Button>
+                <Link href="/videoself">
+                Quản lí video
+               </Link>
+                </div>
+                
               </div>
               {isDropdownOpen && (
                 <div
                   ref={dropdownRef}
-                  className="absolute right-1 mt-0 w-48 bg-white shadow-lg rounded-lg z-10"
+                  className="absolute w-48 bg-white shadow-lg rounded-lg z-10"
                 >
                   <Button onPress={handleUpdateInfo} fullWidth style={{ color: 'black' }}>
                     Cập nhật thông tin
@@ -309,13 +324,12 @@ const Navbar = () => {
                   <Button onPress={handleBookingList} fullWidth style={{ color: 'black' }}>
                     Booking đã gửi
                   </Button>
-                  {/* Conditionally render "Booking đã nhận" for lawyers */}
                   {user.role === 'lawyer' && (
                     <Button onPress={handleAcceptedBookings} fullWidth style={{ color: 'black' }}>
                       Booking đã nhận
                     </Button>
                   )}
-                   {user.role === 'lawyer' && (
+                  {user.role === 'lawyer' && (
                     <Button onPress={detailLaywerInforMation} fullWidth style={{ color: 'black' }}>
                       Cập nhật với vai trò luật sư
                     </Button>
@@ -339,6 +353,17 @@ const Navbar = () => {
           )}
         </div>
       </div>
+      {isChatOpen && (
+        <>
+          <SliderChatUser
+            onClose={closeChat}
+            onSelectConversation={(conversationId: string) => openChat(conversationId, '')}
+          />
+          {currentConversationId && currentLawyerId !== null && (
+            <UserChatLawyer id={currentConversationId} onClose={closeChat} />
+          )}
+        </>
+      )}
     </nav>
   );
 };

@@ -1,13 +1,14 @@
 import Footer from '@/components/common/footer'
 import Navbar from '@/components/common/navbar'
-import CoursesIndex from '@/components/module/courses'
+import VideoManager from '@/components/module/quanlivideochominh/VideoManager'
 import React from 'react'
 
-export default function CoursePage() {
+// lấy cái quản lí video cho mình
+export default function QuanLiVideo() {
   return (
     <div>
       <Navbar/>
-      <CoursesIndex/>
+      <VideoManager/>
       <Footer/>
     </div>
   )

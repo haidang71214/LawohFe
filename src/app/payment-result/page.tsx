@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { addToast } from '@heroui/react';
 import Link from 'next/link';
-import axios from 'axios';
+import { axiosInstance } from '@/fetchApi';
 
 export default function PaymentResult() {
   const searchParams = useSearchParams();
@@ -52,8 +52,8 @@ export default function PaymentResult() {
       // Fallback: Fetch payment status using vnp_TxnRef
       const vnpTxnRef = searchParams.get('vnp_TxnRef');
       if (vnpTxnRef) {
-        axios
-  .get(`http://localhost:8080/payment/get-payment-status/${vnpTxnRef}`)
+        axiosInstance
+  .get(`/payment/get-payment-status/${vnpTxnRef}`)
   .then((response) => {
     const { status, txnRef } = response.data;
     setPaymentStatus(status);

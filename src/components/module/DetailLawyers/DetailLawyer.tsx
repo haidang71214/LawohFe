@@ -4,8 +4,8 @@ import React, { useEffect, useState } from 'react';
 import { axiosInstance } from '@/fetchApi';
 import { Button, Modal, Input, Textarea, Select, SelectItem, ModalHeader, ModalBody, ModalFooter, ModalContent, addToast } from '@heroui/react';
 import { USER_PROFILE } from '@/constant/enum';
+import { useChat } from '@/components/common/chatContext';
 
-// Enum dịch chuyên ngành sang tiếng Việt
 const LawyerCategories: Record<string, string> = {
   INSURANCE: 'Bảo hiểm',
   CIVIL: 'Dân sự',
@@ -43,8 +43,8 @@ interface Lawyer {
   _id: string;
   name: string;
   star: number;
-  typeLawyer: TypeLawyer;
-  subTypes: SubType[];
+  typeLawyer: TypeLawyer | null;
+  subTypes: SubType[] | null;
   role: string;
   province: string;
   avartar_url: string;
@@ -53,15 +53,33 @@ interface Lawyer {
   description: string;
   certificate: string[];
   experienceYear: number;
-  customPrice: { price: number, description: string, type: string }[];
+  customPrice: { price: number; description: string; type: string }[];
 }
 
 interface DetailLawyerProps {
   id: string;
 }
 
-function translateTypeLawyer(typeInput: string[] | string): string {
-  if (!typeInput) return 'Chưa có thông tin';
+interface Client {
+  _id: string;
+  name: string;
+  avartar_url: string;
+}
+
+interface Review {
+  _id: string;
+  client_id: Client;
+  lawyer_id: string;
+  rating: number;
+  comment: string;
+  review_date: string;
+  createdAt: string;
+  updatedAt: string;
+  __v: number;
+}
+
+function translateTypeLawyer(typeInput: string[] | string | undefined): string {
+  if (!typeInput || (Array.isArray(typeInput) && typeInput.length === 0)) return 'Chưa có thông tin';
 
   if (typeof typeInput === 'string') {
     return LawyerCategories[typeInput] || typeInput;
@@ -82,6 +100,10 @@ export default function DetailLawyer({ id }: DetailLawyerProps) {
   const [error, setError] = useState<string | null>(null);
   const [bookedLawyerIds, setBookedLawyerIds] = useState<string[]>([]);
   const [isSuccess, setIsSuccess] = useState(false);
+  const [reviews, setReviews] = useState<Review[]>([]);
+  const [loadingReviews, setLoadingReviews] = useState(false);
+  const [errorReviews, setErrorReviews] = useState<string | null>(null);
+  const [isOpen, setIsOpen] = useState(false);
 
   const [formData, setFormData] = useState({
     client_id: '',
@@ -91,29 +113,35 @@ export default function DetailLawyer({ id }: DetailLawyerProps) {
     typeBooking: '',
     note: '',
   });
-  interface Client {
-    _id: string;
-    name: string;
-    avartar_url: string;
-  }
-  
-  interface Review {
-    _id: string;
-    client_id: Client;
-    lawyer_id: string;
-    rating: number;
-    comment: string;
-    review_date: string;
-    createdAt: string;
-    updatedAt: string;
-    __v: number;
-  }
-  const [reviews, setReviews] = useState<Review[]>([]);
-const [loadingReviews, setLoadingReviews] = useState(false);
-const [errorReviews, setErrorReviews] = useState<string | null>(null);
-  const [isOpen, setIsOpen] = useState(false);
 
-  // Fetch user’s booked lawyers (from ShittingFile)
+  const [hasExistingConversation, setHasExistingConversation] = useState(false);
+  const [conversationId, setConversationId] = useState<string | null>(null);
+  const { openChat } = useChat();
+
+  useEffect(() => {
+    const checkConversation = async () => {
+      try {
+        const response = await axiosInstance.get(`/chat/checkConvedddrsation/${id}`);
+        if (response.data && response.data.data) {
+          setHasExistingConversation(true);
+          setConversationId(response.data.data._id);
+          console.log('Conversation exists, showing continue chat option');
+        } else {
+          setHasExistingConversation(false);
+          setConversationId(null);
+          console.log('No conversation found, showing create new chat option');
+        }
+      } catch {
+        setHasExistingConversation(false);
+        setConversationId(null);
+      }
+    };
+
+    if (id) {
+      checkConversation();
+    }
+  }, [id]);
+
   const fetchUserBookedLawyers = async () => {
     try {
       const userProfileStr = localStorage.getItem(USER_PROFILE) || '';
@@ -132,28 +160,27 @@ const [errorReviews, setErrorReviews] = useState<string | null>(null);
       console.error('Lỗi khi lấy danh sách booking của user:', error);
     }
   };
-// fetch review 
-const fetchReviews = async () => {
-  try {
-    setLoadingReviews(true);
-    setErrorReviews(null);
 
-    const response = await axiosInstance.get(`/review/${id}`);
-    if (Array.isArray(response.data)) {
-      setReviews(response.data);
-    } else {
-      setErrorReviews('Không tìm thấy đánh giá nào.');
-      setReviews([]);
+  const fetchReviews = async () => {
+    try {
+      setLoadingReviews(true);
+      setErrorReviews(null);
+
+      const response = await axiosInstance.get(`/review/${id}`);
+      if (Array.isArray(response.data)) {
+        setReviews(response.data);
+      } else {
+        setErrorReviews('Không tìm thấy đánh giá nào.');
+        setReviews([]);
+      }
+    } catch (err: any) {
+      setErrorReviews('Lỗi khi lấy đánh giá. Vui lòng thử lại sau.');
+      console.error('Error fetching reviews:', err.response?.data || err.message);
+    } finally {
+      setLoadingReviews(false);
     }
-  } catch (err: any) {
-    setErrorReviews('Lỗi khi lấy đánh giá. Vui lòng thử lại sau.');
-    console.error('Error fetching reviews:', err.response?.data || err.message);
-  } finally {
-    setLoadingReviews(false);
-  }
-};
+  };
 
-useEffect(() => {
   const fetchLawyer = async () => {
     if (!id || typeof id !== 'string') {
       setError('ID không hợp lệ. Vui lòng cung cấp ID trong URL.');
@@ -164,61 +191,153 @@ useEffect(() => {
     setError(null);
 
     try {
-      const response = await axiosInstance.get(`/lawyer/vLawyer?id=${id}`);
-      const lawyerData = response.data?.data?.data;
+      let response = await axiosInstance.get(`/lawyer/vLawyer?id=${id}`);
+      let lawyerData = response.data?.data?.data;
+
+      if (!lawyerData) {
+        response = await axiosInstance.get(`/users/${id}`);
+        lawyerData = response.data?.data?.user;
+      }
 
       if (lawyerData) {
-        setLawyer(lawyerData);
-        fetchReviews(); // Gọi fetchReviews sau khi lấy thông tin luật sư
+        setLawyer({
+          ...lawyerData,
+          typeLawyer: lawyerData.typeLawyer || { type: [], _id: '', lawyer_id: '', createdAt: '', updatedAt: '', __v: 0 },
+          subTypes: lawyerData.subTypes || [],
+          certificate: lawyerData.certificate || [],
+          customPrice: lawyerData.customPrice || [],
+          description: lawyerData.description || 'Chưa có mô tả',
+          experienceYear: lawyerData.experienceYear || 0,
+          star: lawyerData.star || 0,
+        });
+        fetchReviews();
       } else {
-        setError('Không tìm thấy thông tin luật sư.');
+        setError('Không tìm thấy thông tin luật sư từ cả hai nguồn.');
         setLawyer(null);
       }
     } catch (err: any) {
-      setError('Không thể tải thông tin luật sư. Vui lòng thử lại sau.');
+      setError(`Không thể tải thông tin luật sư. Lỗi: ${err.response?.status || 'Không xác định'}`);
       console.error('Error fetching lawyer:', err.response?.data || err.message);
     } finally {
       setLoading(false);
     }
   };
-  fetchLawyer();
-}, [id]);
+
+  useEffect(() => {
+    fetchLawyer();
+  }, [id]);
 
   useEffect(() => {
     fetchUserBookedLawyers();
     setIsSuccess(false);
   }, [isSuccess]);
 
-  useEffect(() => {
-    const fetchLawyer = async () => {
-      if (!id || typeof id !== 'string') {
-        setError('ID không hợp lệ. Vui lòng cung cấp ID trong URL.');
-        setLoading(false);
+  const handleCreateNewChat = async () => {
+    try {
+      const userProfileStr = localStorage.getItem(USER_PROFILE) || '';
+      if (!userProfileStr) {
+        addToast({
+          title: 'Bạn phải đăng nhập trước khi chat',
+          description: 'Vui lòng đăng nhập!',
+          color: 'danger',
+          variant: 'flat',
+          timeout: 4000,
+        });
         return;
       }
-      setLoading(true);
-      setError(null);
 
-      try {
-        const response = await axiosInstance.get(`/lawyer/vLawyer?id=${id}`);
-        const lawyerData = response.data?.data?.data;
-        console.log(lawyerData);
-        
-        if (lawyerData) {
-          setLawyer(lawyerData);
-        } else {
-          setError('Không tìm thấy thông tin luật sư.');
-          setLawyer(null);
-        }
-      } catch (err: any) {
-        setError('Không thể tải thông tin luật sư. Vui lòng thử lại sau.');
-        console.error('Error fetching lawyer:', err.response?.data || err.message);
-      } finally {
-        setLoading(false);
+      const userProfile = JSON.parse(userProfileStr) as { _id?: string };
+      const clientId = userProfile._id;
+
+      if (!clientId) {
+        addToast({
+          title: 'Không tìm thấy thông tin người dùng',
+          description: 'Vui lòng đăng nhập lại!',
+          color: 'danger',
+          variant: 'flat',
+          timeout: 4000,
+        });
+        return;
       }
-    };
-    fetchLawyer();
-  }, [id]);
+
+      const createResponse = await axiosInstance.post('/chat/conversation', {
+        participants: [clientId, id],
+      });
+      console.log('API Response:', createResponse);
+      if (createResponse.data && createResponse.data._id) {
+        addToast({
+          title: '🎉 Tạo cuộc trò chuyện thành công!',
+          description: 'Bạn có thể bắt đầu chat với luật sư',
+          color: 'success',
+          variant: 'flat',
+          timeout: 3000,
+        });
+
+        setHasExistingConversation(true);
+        const newConversationId = createResponse.data._id;
+        setConversationId(newConversationId);
+        openChat(newConversationId, id);
+      } else {
+        throw new Error('Failed to create conversation: Invalid response structure');
+      }
+    } catch (error: any) {
+      console.error('Error creating conversation:', error);
+      addToast({
+        title: 'Lỗi tạo cuộc trò chuyện',
+        description: error.response?.data?.message || error.message || 'Vui lòng thử lại sau',
+        color: 'danger',
+        variant: 'flat',
+        timeout: 4000,
+      });
+    }
+  };
+
+  const handleContinueChat = async (conversationId: string | null) => {
+    try {
+      const userProfileStr = localStorage.getItem(USER_PROFILE) || '';
+      if (!userProfileStr) {
+        addToast({
+          title: 'Bạn phải đăng nhập trước khi chat',
+          description: 'Vui lòng đăng nhập!',
+          color: 'danger',
+          variant: 'flat',
+          timeout: 4000,
+        });
+        return;
+      }
+
+      if (!conversationId) {
+        addToast({
+          title: 'Cuộc trò chuyện không tồn tại',
+          description: 'Vui lòng tạo cuộc trò chuyện mới',
+          color: 'warning',
+          variant: 'flat',
+          timeout: 4000,
+        });
+        setHasExistingConversation(false);
+        return;
+      }
+
+      openChat(conversationId, id);
+    } catch (error: any) {
+      console.error('Error continuing chat:', error);
+      addToast({
+        title: 'Lỗi khi tiếp tục chat',
+        description: 'Vui lòng thử lại sau',
+        color: 'danger',
+        variant: 'flat',
+        timeout: 4000,
+      });
+    }
+  };
+
+  const handleChatAction = async () => {
+    if (hasExistingConversation && conversationId) {
+      await handleContinueChat(conversationId);
+    } else {
+      await handleCreateNewChat();
+    }
+  };
 
   const handleSubmit = async () => {
     const userProfileStr = localStorage.getItem(USER_PROFILE) || '';
@@ -226,16 +345,31 @@ useEffect(() => {
     try {
       const userProfile = JSON.parse(userProfileStr) as { _id?: string };
       clientId = userProfile._id || '';
+      if (!userProfileStr) {
+        addToast({
+          title: 'Bạn phải đăng nhập trước khi đặt lịch',
+          description: 'Vui lòng ạ !',
+          color: 'danger',
+          variant: 'flat',
+          timeout: 4000,
+        });
+      }
     } catch {
-      console.error('Lỗi parse USER_PROFILE từ localStorage');
+      addToast({
+        title: 'Bạn phải đăng nhập trước khi đặt lịch',
+        description: 'Vui lòng ạ !',
+        color: 'danger',
+        variant: 'flat',
+        timeout: 4000,
+      });
     }
 
     if (!clientId || !formData.lawyer_id || !formData.booking_start || !formData.booking_end) {
       addToast({
-        title: "❌ vui lòng điền đẩy đủ thông tin",
-        description: "Bạn kiểm tra lại form",
-        color: "danger",
-        variant: "flat",
+        title: '❌ vui lòng điền đẩy đủ thông tin',
+        description: 'Bạn kiểm tra lại form',
+        color: 'danger',
+        variant: 'flat',
         timeout: 4000,
       });
       return;
@@ -252,31 +386,39 @@ useEffect(() => {
       console.log('Booking created successfully:', response.data);
 
       addToast({
-        title: "🎉 Tạo form thành công!",
-        description: "Vui lòng chờ để luật sư duyệt ạ !",
-        color: "success",
-        variant: "flat",
+        title: '🎉 Tạo form thành công!',
+        description: 'Vui lòng chờ để luật sư duyệt ạ !',
+        color: 'success',
+        variant: 'flat',
         timeout: 4000,
       });
       setIsSuccess(true);
       setIsOpen(false);
     } catch (error: any) {
       addToast({
-        title: "Vui lòng booking những thứ mà luật sư này chuyên ạ" ,
+        title: 'Vui lòng kiểm tra lại form ạ',
         description: `${error}`,
-        color: "warning",
-        variant: "flat",
+        color: 'warning',
+        variant: 'flat',
         timeout: 4000,
-      })
+      });
     }
   };
 
   if (loading) {
-    return <div style={{ padding: '20px', textAlign: 'center' }}>Đang tải...</div>;
+    return (
+      <div style={{ padding: '20px', textAlign: 'center', background: 'linear-gradient(135deg, #f5f7fa, #c3cfe2)', minHeight: '100vh' }}>
+        <div style={{ fontSize: '20px', color: '#3B82F6', fontWeight: '600' }}>Đang tải...</div>
+      </div>
+    );
   }
 
   if (error || !lawyer) {
-    return <div style={{ padding: '20px', textAlign: 'center' }}>{error || 'Không tìm thấy thông tin luật sư.'}</div>;
+    return (
+      <div style={{ padding: '20px', textAlign: 'center', background: 'linear-gradient(135deg, #f5f7fa, #c3cfe2)', minHeight: '100vh' }}>
+        <div style={{ fontSize: '18px', color: '#EF4444', fontWeight: '500' }}>{error || 'Không tìm thấy thông tin luật sư.'}</div>
+      </div>
+    );
   }
 
   const isLawyerBooked = bookedLawyerIds.includes(lawyer._id);
@@ -284,38 +426,58 @@ useEffect(() => {
   return (
     <div
       style={{
-        backgroundColor: '#fff',
+        background: 'linear-gradient(135deg, #f5f7fa, #c3cfe2)', // Gradient nền nhẹ nhàng
         minHeight: '100vh',
         fontFamily: "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif",
-        color: '#222',
+        color: '#333',
         marginTop: '70px',
       }}
     >
+      {/* Header Section */}
       <div
         style={{
-          maxWidth: 940,
+          paddingLeft:'300px',
+          paddingRight:'300px',
           margin: '0 auto',
           paddingTop: 40,
           paddingBottom: 40,
           textAlign: 'center',
-          borderBottom: '1px solid #ddd',
+          background: 'linear-gradient(135deg, #1E3A8A, #3B82F6)', // Gradient xanh dương
+          borderRadius: '15px',
+          boxShadow: '0 4px 15px rgba(0, 0, 0, 0.2)',
+          color: '#F9FAFB',
+          animation: 'fadeIn 1s ease-in-out',
         }}
       >
         <img
           src={lawyer.avartar_url !== 'null' ? lawyer.avartar_url : '/default-avatar.png'}
           alt={lawyer.name}
           style={{
-            width: 120,
-            height: 120,
+            width: 150,
+            height: 150,
             borderRadius: '50%',
             objectFit: 'cover',
             marginBottom: 12,
+            border: '4px solid #93C5FD', // Viền xanh nhạt
+            boxShadow: '0 4px 10px rgba(0, 0, 0, 0.3)',
           }}
         />
-        <h1 style={{ margin: '0 0 5px', fontWeight: '700', fontSize: 24 }}>{lawyer.name}</h1>
-        <p style={{ margin: 0, fontSize: 14, color: '#555' }}>{lawyer.province}</p>
+        <h1
+          style={{
+            margin: '0 0 5px',
+            fontWeight: '700',
+            fontSize: 28,
+            textTransform: 'uppercase',
+            letterSpacing: '1px',
+          }}
+        >
+          {lawyer.name}
+        </h1>
+        <p style={{ margin: 0, fontSize: 16, color: '#D1D5DB' }}>{lawyer.province}</p>
+        <div style={{ marginTop: 10, fontSize: 18, color: '#FBBF24' }}>{'★'.repeat(lawyer.star || 0)}</div>
       </div>
 
+      {/* Main Content Section */}
       <div
         style={{
           maxWidth: 940,
@@ -327,34 +489,48 @@ useEffect(() => {
           flexWrap: 'wrap',
         }}
       >
-        <div style={{ flex: '1 1 600px', fontSize: 14, lineHeight: 1.6, color: '#333' }}>
-          <p>
-            <strong>Mô tả:</strong> <br />
-            <span style={{ whiteSpace: 'pre-wrap' }}>{lawyer.description || 'Chưa có mô tả'}</span>
+        {/* Lawyer Info Card */}
+        <div
+          style={{
+            flex: '1 1 600px',
+            background: '#fff',
+            borderRadius: '15px',
+            padding: '30px',
+            boxShadow: '0 4px 15px rgba(0, 0, 0, 0.1)',
+            fontSize: 14,
+            lineHeight: 1.6,
+            color: '#333',
+            transition: 'transform 0.3s ease',
+            borderLeft: '4px solid #3B82F6', // Viền trái xanh dương
+          }}
+          onMouseEnter={(e) => (e.currentTarget.style.transform = 'translateY(-5px)')}
+          onMouseLeave={(e) => (e.currentTarget.style.transform = 'translateY(0)')}
+        >
+          <p style={{ marginBottom: 15 }}>
+            <strong style={{ color: '#1E3A8A' }}>Mô tả:</strong> <br />
+            <span style={{ whiteSpace: 'pre-wrap', color: '#555' }}>{lawyer.description || 'Chưa có mô tả'}</span>
           </p>
-          <p>
-            <strong>Số sao: {lawyer.star || 'Chưa có sao'} </strong> <br />
-            <span style={{ whiteSpace: 'pre-wrap' }}>{lawyer.description || 'Chưa có mô tả'}</span>
+          <p style={{ marginBottom: 15 }}>
+            <strong style={{ color: '#1E3A8A' }}>Chuyên môn:</strong>{' '}
+            <span style={{ color: '#3B82F6' }}>
+              {lawyer.typeLawyer && lawyer.typeLawyer.type?.length
+                ? translateTypeLawyer(lawyer.typeLawyer.type)
+                : 'Chưa có thông tin'}
+            </span>
           </p>
-          <p>
-            <strong>Chuyên môn:</strong>{' '}
-            {lawyer.typeLawyer?.type?.length
-              ? translateTypeLawyer(lawyer.typeLawyer.type)
-              : 'Chưa có thông tin'}
+          <p style={{ marginBottom: 15 }}>
+            <strong style={{ color: '#1E3A8A' }}>Chuyên ngành chi tiết:</strong>{' '}
+            <span style={{ color: '#3B82F6' }}>
+              {lawyer.subTypes && lawyer.subTypes.length && lawyer.subTypes[0]?.subType?.length
+                ? lawyer.subTypes[0].subType.join(', ')
+                : 'Chưa có thông tin'}
+            </span>
           </p>
-
-          <p>
-            <strong>Chuyên ngành chi tiết:</strong>{' '}
-            {lawyer.subTypes?.length && lawyer.subTypes[0]?.subType?.length
-              ? lawyer.subTypes[0].subType.join(', ')
-              : 'Chưa có thông tin'}
+          <p style={{ marginBottom: 15 }}>
+            <strong style={{ color: '#1E3A8A' }}>Chứng chỉ, bằng cấp cá nhân:</strong>
           </p>
-
-          <p>
-            <strong>Chứng chỉ, bằng cấp cá nhân:</strong>
-          </p>
-          {lawyer.certificate?.length ? (
-            <ul style={{ paddingLeft: 20, marginTop: 8 }}>
+          {lawyer.certificate && lawyer.certificate.length ? (
+            <ul style={{ paddingLeft: 20, marginTop: 8, marginBottom: 15 }}>
               {lawyer.certificate.map((cert, i) => (
                 <li key={i} style={{ marginBottom: 6, color: '#555' }}>
                   {cert}
@@ -362,52 +538,63 @@ useEffect(() => {
               ))}
             </ul>
           ) : (
-            <p>Chưa có thông tin</p>
+            <p style={{ color: '#777' }}>Chưa có thông tin</p>
           )}
-          <strong>Giá tư vấn : </strong>
-          {lawyer.customPrice.map((price, index) => (
-            <div
-              key={index}
-              style={{
-                marginBottom: '15px',
-                padding: '10px',
-                backgroundColor: '#fff',
-                borderRadius: '8px',
-                border: '1px solid #ddd',
-              }}
-            >
-              <p>
-                <strong>+ </strong>
-                {price.price.toLocaleString()} VND/ngày
-              </p>
-              <p>
-                <strong>Loại: </strong>
-                {translateTypeLawyer(price.type)}
-              </p>
-              <p>
-                <strong>Mô tả: </strong>
-                {price.description || 'Chưa có mô tả'}
-              </p>
-            </div>
-          ))}
-
+          <strong style={{ color: '#1E3A8A' }}>Giá tư vấn:</strong>
+          {lawyer.customPrice && Array.isArray(lawyer.customPrice) && lawyer.customPrice.length ? (
+            lawyer.customPrice.map((price, index) => (
+              <div
+                key={index}
+                style={{
+                  marginBottom: '15px',
+                  padding: '15px',
+                  background: 'linear-gradient(135deg, #f9fafb, #e5e7eb)',
+                  borderRadius: '10px',
+                  boxShadow: '0 2px 5px rgba(0, 0, 0, 0.1)',
+                  transition: 'transform 0.2s ease',
+                }}
+                onMouseEnter={(e) => (e.currentTarget.style.transform = 'scale(1.02)')}
+                onMouseLeave={(e) => (e.currentTarget.style.transform = 'scale(1)')}
+              >
+                <p style={{ margin: '5px 0' }}>
+                  <strong style={{ color: '#3B82F6' }}>+ </strong>
+                  {price.price.toLocaleString()} VND/ngày
+                </p>
+                <p style={{ margin: '5px 0' }}>
+                  <strong>Loại:</strong> {translateTypeLawyer(price.type)}
+                </p>
+                <p style={{ margin: '5px 0' }}>
+                  <strong>Mô tả:</strong> {price.description || 'Chưa có mô tả'}
+                </p>
+              </div>
+            ))
+          ) : (
+            <p style={{ color: '#777', marginTop: 8 }}>Chưa có thông tin giá tư vấn.</p>
+          )}
           <div style={{ textAlign: 'center', marginTop: '20px' }}>
             <Button
               color={isLawyerBooked ? 'secondary' : 'primary'}
               style={{
-                backgroundColor: isLawyerBooked ? '#3C3C3C' : '#3C3C3C',
-                color: 'white',
-                padding: '10px 20px',
-                border: '1px solid black',
-                borderRadius: '8px',
+                background: isLawyerBooked
+                  ? 'linear-gradient(135deg, #6B7280, #4B5563)'
+                  : 'linear-gradient(135deg, #1E3A8A, #3B82F6)',
+                color: '#F9FAFB',
+                padding: '12px 30px',
+                border: 'none',
+                borderRadius: '25px',
                 fontSize: '16px',
+                fontWeight: '600',
+                boxShadow: '0 3px 10px rgba(0, 0, 0, 0.2)',
+                transition: 'transform 0.2s ease, background 0.3s ease',
               }}
+              onMouseEnter={(e) => (e.currentTarget.style.transform = 'scale(1.05)')}
+              onMouseLeave={(e) => (e.currentTarget.style.transform = 'scale(1)')}
               onPress={() => {
                 setFormData((prev) => ({
                   ...prev,
                   lawyer_id: lawyer._id,
                 }));
-                setIsOpen(true); // Mở modal khi nhấn nút
+                setIsOpen(true);
               }}
             >
               {isLawyerBooked ? 'Đặt thêm' : 'Đặt lịch ngay'}
@@ -415,87 +602,168 @@ useEffect(() => {
           </div>
         </div>
 
+        {/* Experience Card */}
         <div
           style={{
             flex: '0 0 280px',
-            border: '1px solid #ddd',
-            borderRadius: 8,
-            padding: 30,
+            background: 'linear-gradient(135deg, #1E3A8A, #3B82F6)',
+            borderRadius: '15px',
+            padding: '30px',
             textAlign: 'center',
-            color: '#555',
+            color: '#F9FAFB',
+            boxShadow: '0 4px 15px rgba(0, 0, 0, 0.2)',
+            transition: 'transform 0.3s ease',
           }}
+          onMouseEnter={(e) => (e.currentTarget.style.transform = 'translateY(-5px)')}
+          onMouseLeave={(e) => (e.currentTarget.style.transform = 'translateY(0)')}
         >
-          <div style={{ fontSize: 56, fontWeight: '600', marginBottom: 12, color: '#999' }}>
+          <div style={{ fontSize: 56, fontWeight: '700', marginBottom: 12, color: '#FBBF24' }}>
             {lawyer.experienceYear || 0}
           </div>
-          <div style={{ fontSize: 14, fontWeight: '600', color: '#999' }}>
+          <div style={{ fontSize: 16, fontWeight: '600', color: '#D1D5DB' }}>
             năm kinh nghiệm làm việc
           </div>
-        </div>
-      </div>
-      <div style={{ maxWidth: 940, margin: '0 auto', padding: '40px 0' }}>
-  <h2 style={{ fontSize: '20px', fontWeight: '600', marginBottom: '20px' }}>Đánh giá từ khách hàng</h2>
-
-  {loadingReviews ? (
-    <div style={{ textAlign: 'center', padding: '20px' }}>Đang tải đánh giá...</div>
-  ) : errorReviews ? (
-    <div style={{ textAlign: 'center', color: 'red', padding: '20px' }}>{errorReviews}</div>
-  ) : reviews.length > 0 ? (
-    reviews.map((review, index) => (
-      <div
-        key={index}
-        style={{
-          marginBottom: '20px',
-          padding: '15px',
-          borderRadius: '8px',
-          border: '1px solid #ddd',
-        }}
-      >
-        <div style={{ display: 'flex', alignItems: 'center', marginBottom: '10px' }}>
-          <img
-            src={review.client_id.avartar_url || '/default-avatar.png'}
-            alt={review.client_id.name}
+          <Button
+            onClick={() => handleChatAction()}
             style={{
-              width: '40px',
-              height: '40px',
-              borderRadius: '50%',
-              objectFit: 'cover',
-              marginRight: '12px',
+              marginTop: '20px',
+              background: 'linear-gradient(135deg, #FBBF24, #F59E0B)',
+              color: '#1E3A8A',
+              padding: '10px 20px',
+              border: 'none',
+              borderRadius: '20px',
+              fontSize: '15px',
+              fontWeight: '600',
+              boxShadow: '0 3px 10px rgba(0, 0, 0, 0.2)',
+              transition: 'transform 0.2s ease, background 0.3s ease',
             }}
-          />
-          <strong>{review.client_id.name}</strong>
-          <span style={{ marginLeft: '10px', fontSize: '14px', color: '#777' }}>
-            {new Date(review.review_date).toLocaleDateString('vi-VN')}
-          </span>
+            onMouseEnter={(e) => (e.currentTarget.style.transform = 'scale(1.05)')}
+            onMouseLeave={(e) => (e.currentTarget.style.transform = 'scale(1)')}
+          >
+            {hasExistingConversation ? 'Nhắn tiếp' : 'Tạo tin nhắn'}
+          </Button>
         </div>
-        <div style={{ fontSize: '16px', fontWeight: '600' }}>
-          {'★'.repeat(review.rating)}
-        </div>
-        <p style={{ marginTop: '8px', color: '#555' }}>{review.comment}</p>
       </div>
-    ))
-  ) : (
-    <p style={{ textAlign: 'center', color: '#555' }}>Chưa có đánh giá.</p>
-  )}
-</div>
+
+      {/* Reviews Section */}
+      <div style={{ maxWidth: 940, margin: '0 auto', padding: '40px 0' }}>
+        <h2
+          style={{
+            fontSize: '24px',
+            fontWeight: '700',
+            marginBottom: '30px',
+            color: '#1E3A8A',
+            textAlign: 'center',
+            textTransform: 'uppercase',
+            letterSpacing: '1px',
+          }}
+        >
+          Đánh giá từ khách hàng
+        </h2>
+        {loadingReviews ? (
+          <div style={{ textAlign: 'center', padding: '20px', color: '#3B82F6', fontSize: '18px' }}>
+            Đang tải đánh giá...
+          </div>
+        ) : errorReviews ? (
+          <div style={{ textAlign: 'center', color: '#EF4444', padding: '20px', fontSize: '16px' }}>
+            {errorReviews}
+          </div>
+        ) : reviews.length > 0 ? (
+          reviews.map((review, index) => (
+            <div
+              key={index}
+              style={{
+                marginBottom: '20px',
+                padding: '20px',
+                background: '#fff',
+                borderRadius: '10px',
+                boxShadow: '0 3px 10px rgba(0, 0, 0, 0.1)',
+                animation: 'slideIn 0.5s ease',
+                borderLeft: '3px solid #3B82F6',
+                transition: 'transform 0.2s ease',
+              }}
+              onMouseEnter={(e) => (e.currentTarget.style.transform = 'translateY(-3px)')}
+              onMouseLeave={(e) => (e.currentTarget.style.transform = 'translateY(0)')}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', marginBottom: '10px' }}>
+                <img
+                  src={review.client_id.avartar_url || '/default-avatar.png'}
+                  alt={review.client_id.name}
+                  style={{
+                    width: '50px',
+                    height: '50px',
+                    borderRadius: '50%',
+                    objectFit: 'cover',
+                    marginRight: '12px',
+                    border: '2px solid #3B82F6',
+                  }}
+                />
+                <div>
+                  <strong style={{ fontSize: '16px', color: '#1E3A8A' }}>{review.client_id.name}</strong>
+                  <div style={{ fontSize: '14px', color: '#777', marginTop: '2px' }}>
+                    {new Date(review.review_date).toLocaleDateString('vi-VN')}
+                  </div>
+                </div>
+              </div>
+              <div style={{ fontSize: '18px', fontWeight: '600', color: '#FBBF24', marginBottom: '8px' }}>
+                {'★'.repeat(review.rating)}
+              </div>
+              <p style={{ marginTop: '8px', color: '#555', fontSize: '15px', lineHeight: '1.5' }}>{review.comment}</p>
+            </div>
+          ))
+        ) : (
+          <p style={{ textAlign: 'center', color: '#777', fontSize: '16px' }}>Chưa có đánh giá.</p>
+        )}
+      </div>
+
+      {/* Modal Booking */}
       {isOpen && (
-        <Modal style={{ backgroundColor: '#CFC5C2' }} isOpen={isOpen} onOpenChange={() => setIsOpen(false)} placement="top-center">
+        <Modal
+          style={{
+            background: 'linear-gradient(135deg, #f5f7fa, #c3cfe2)',
+            borderRadius: '15px',
+            boxShadow: '0 5px 20px rgba(0, 0, 0, 0.3)',
+          }}
+          isOpen={isOpen}
+          onOpenChange={() => setIsOpen(false)}
+          placement="top-center"
+        >
           <ModalContent>
-            <ModalHeader>Đặt lịch tư vấn</ModalHeader>
+            <ModalHeader style={{ fontSize: '20px', color: '#1E3A8A', fontWeight: '700' }}>
+              Đặt lịch tư vấn
+            </ModalHeader>
             <ModalBody>
-              <div>Thời gian bắt đầu:</div>
+              <div style={{ marginBottom: '5px', fontWeight: '500', color: '#333' }}>Thời gian bắt đầu:</div>
               <Input
                 type="datetime-local"
                 value={formData.booking_start}
                 onChange={(e) => setFormData({ ...formData, booking_start: e.target.value })}
+                style={{
+                  background: '#fff',
+                  borderRadius: '8px',
+                  padding: '10px',
+                  border: '1px solid #ddd',
+                  color: '#333',
+                }}
               />
-              <div>Thời gian kết thúc:</div>
+              <div style={{ marginBottom: '5px', fontWeight: '500', color: '#333', marginTop: '15px' }}>
+                Thời gian kết thúc:
+              </div>
               <Input
                 type="datetime-local"
                 value={formData.booking_end}
                 onChange={(e) => setFormData({ ...formData, booking_end: e.target.value })}
+                style={{
+                  background: '#fff',
+                  borderRadius: '8px',
+                  padding: '10px',
+                  border: '1px solid #ddd',
+                  color: '#333',
+                }}
               />
-              <div>Chọn loại tư vấn:</div>
+              <div style={{ marginBottom: '5px', fontWeight: '500', color: '#333', marginTop: '15px' }}>
+                Chọn loại tư vấn:
+              </div>
               <Select
                 className="max-w-xs"
                 placeholder="Chọn kiểu tư vấn"
@@ -503,31 +771,80 @@ useEffect(() => {
                 onSelectionChange={(keys) =>
                   setFormData({ ...formData, typeBooking: String(Array.from(keys)[0] || '') })
                 }
+                style={{
+                  background: '#fff',
+                  borderRadius: '8px',
+                  border: '1px solid #ddd',
+                  padding: '5px',
+                }}
               >
                 {Object.entries(LawyerCategories).map(([key, label]) => (
-                  <SelectItem key={key} data-value={key} style={{ backgroundColor: '#3C3C3C', color: 'white' }}>
+                  <SelectItem
+                    key={key}
+                    data-value={key}
+                    style={{
+                      background: 'linear-gradient(135deg, #f9fafb, #e5e7eb)',
+                      color: '#333',
+                      padding: '8px',
+                    }}
+                  >
                     {label}
                   </SelectItem>
                 ))}
               </Select>
-
               <Textarea
                 label="Ghi chú"
                 placeholder="Ghi chú cho luật sư..."
                 value={formData.note}
                 onChange={(e) => setFormData({ ...formData, note: e.target.value })}
+                style={{
+                  background: '#fff',
+                  borderRadius: '8px',
+                  border: '1px solid #ddd',
+                  padding: '10px',
+                  color: '#333',
+                  marginTop: '15px',
+                }}
               />
             </ModalBody>
             <ModalFooter>
-              <Button color="danger" variant="flat" onClick={() => setIsOpen(false)}>
+              <Button
+                color="danger"
+                variant="flat"
+                onClick={() => setIsOpen(false)}
+                style={{
+                  background: 'linear-gradient(135deg, #EF4444, #DC2626)',
+                  color: '#F9FAFB',
+                  padding: '8px 20px',
+                  borderRadius: '20px',
+                }}
+              >
                 Đóng
               </Button>
               {isLawyerBooked ? (
-                <Button color="secondary" onClick={handleSubmit}>
+                <Button
+                  color="secondary"
+                  onClick={handleSubmit}
+                  style={{
+                    background: 'linear-gradient(135deg, #6B7280, #4B5563)',
+                    color: '#F9FAFB',
+                    padding: '8px 20px',
+                    borderRadius: '20px',
+                  }}
+                >
                   Đặt lịch thêm
                 </Button>
               ) : (
-                <Button color="primary" onClick={handleSubmit}>
+                <Button
+                  color="primary"
+                  onClick={handleSubmit}
+                  style={{
+                    background: 'linear-gradient(135deg, #1E3A8A, #3B82F6)',
+                    color: '#F9FAFB',
+                    padding: '8px 20px',
+                    borderRadius: '20px',
+                  }}
+                >
                   Đặt lịch ngay
                 </Button>
               )}

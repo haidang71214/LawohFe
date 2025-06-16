@@ -8,7 +8,7 @@ export enum LawyerCategories { // tiếng việt
    CRIMINAL = 'Hình sự',
    FAMILY = 'Hôn nhân gia đình',
    LABOR = 'Lao động',
-   INTELLECTUALPROPERTY = 'Sở hữu trí tuệ',
+   INTELLECTUAL_PROPERTY = 'Sở hữu trí tuệ',
    INHERITANCE = 'Thừa kế - Di chúc',
    TAX = 'Thuế'
  }  // tiếng anh 

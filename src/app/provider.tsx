@@ -7,7 +7,7 @@ export default function Providers({children} :any) {
   return (
     <HeroUIProvider>
 <ToastProvider
-  placement="bottom-right"
+  placement="bottom-left"
   toastProps={{
     variant: "flat",
     timeout: 3000,

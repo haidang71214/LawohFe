@@ -1,7 +1,6 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import axios from 'axios';
 import { Table, TableHeader, TableColumn, TableBody, TableRow, TableCell, Button, addToast, Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, Input, Textarea } from '@heroui/react';
 import { USER_PROFILE } from '@/constant/enum';
 import { axiosInstance } from '@/fetchApi';
@@ -52,7 +51,7 @@ export default function BookingList() {
     setClientId(id);
   }, []);
 
-  // Fetch bookings list
+  // Fetch bookings and payment status
   useEffect(() => {
     if (!clientId) return;
 
@@ -61,12 +60,23 @@ export default function BookingList() {
         setLoading(true);
         setError(null);
         const response = await axiosInstance.get(`/users/getListBookingUser/${clientId}`);
-        console.log(response);
-        setBookings(response.data);
+        const checkPayment = await axiosInstance.get(`/payment/userGetPayment?client_id=${clientId}`);
         
+        // Map bookings with payment status
+        const updatedBookings = response.data.map((booking: any) => {
+          const payment = checkPayment.data.find(
+            (p: any) => p.booking_id === booking._id && p.status === 'success'
+          );
+          return {
+            ...booking,
+            isPaid: !!payment, // Set isPaid to true if a successful payment exists
+          };
+        });
+
+        setBookings(updatedBookings);
       } catch (err: any) {
         console.error('Error fetching bookings:', err);
-        setError('Lấy danh sách booking thất bại, vui lòng thử lại!');
+        setError('Lấy danh sách booking hoặc thanh toán thất bại, vui lòng thử lại!');
       } finally {
         setLoading(false);
       }
@@ -74,6 +84,25 @@ export default function BookingList() {
 
     fetchBookings();
   }, [clientId]);
+
+  // Check payment status after payment attempt
+  const checkPaymentStatus = async (bookingId: string) => {
+    try {
+      const response = await axiosInstance.get(`/payment/userGetPayment?client_id=${clientId}`);
+      const payment = response.data.find(
+        (p: any) => p.booking_id === bookingId && p.status === 'success'
+      );
+      if (payment) {
+        setBookings((prev) =>
+          prev.map((b) =>
+            b._id === bookingId ? { ...b, isPaid: true } : b
+          )
+        );
+      }
+    } catch (err) {
+      console.error('Error checking payment status:', err);
+    }
+  };
 
   const handleDeleteBooking = async (bookingId: string) => {
     try {
@@ -86,7 +115,7 @@ export default function BookingList() {
       });
       setBookings(bookings.filter((b) => b._id !== bookingId));
     } catch (err: any) {
-      const msg = err.response?.data || 'Lỗi khi xóa lịch, vui lòng thử lại';
+      const msg = err.response?.data?.message || 'Lỗi khi xóa lịch, vui lòng thử lại';
       if (err.response?.status === 409) {
         addToast({
           title: msg,
@@ -105,25 +134,88 @@ export default function BookingList() {
     }
   };
 
-  const handlePayment = async (bookingId: string, amount: number) => {
+  const handlePayment = async (bookingId: string, amount: number, lawyerId: string, clientId: string) => {
+    const booking = bookings.find((b) => b._id === bookingId);
+    if (!booking) {
+      addToast({
+        title: 'Không tìm thấy booking!',
+        color: 'danger',
+        variant: 'flat',
+        timeout: 4000,
+      });
+      return;
+    }
+
+    if (booking.isPaid) {
+      addToast({
+        title: 'Booking này đã được thanh toán!',
+        color: 'warning',
+        variant: 'flat',
+        timeout: 4000,
+      });
+      return;
+    }
+
     try {
-      console.log(amount);
+      // Check for existing payments
+      const paymentResponse = await axiosInstance.get(`/payment/userGetPayment?client_id=${clientId}`);
+      const existingPayment = paymentResponse.data.find(
+        (p: any) => p.booking_id === bookingId
+      );
+
+      if (existingPayment) {
+        if (existingPayment.status === 'success') {
+          setBookings((prev) =>
+            prev.map((b) =>
+              b._id === bookingId ? { ...b, isPaid: true } : b
+            )
+          );
+          addToast({
+            title: 'Booking này đã được thanh toán!',
+            color: 'warning',
+            variant: 'flat',
+            timeout: 4000,
+          });
+          return;
+        }
+        if (existingPayment.status === 'pending' && existingPayment.paymentUrl) {
+          window.open(existingPayment.paymentUrl, '_blank');
+          addToast({
+            title: 'Đã mở liên kết thanh toán hiện có!',
+            color: 'success',
+            variant: 'flat',
+            timeout: 4000,
+          });
+          setTimeout(() => checkPaymentStatus(bookingId), 5000);
+          return;
+        }
+      }
+
+      // Create new payment
       const response = await axiosInstance.post('/payment/create-payment-url', {
         amount: amount,
         orderInfo: `Thanh toan cho booking ${bookingId}`,
         orderType: 'booking',
         bookingId: bookingId,
+        lawyerId: lawyerId,
+        clientId: clientId,
       });
+
       const paymentUrl = response.data.paymentUrl;
-      window.open(paymentUrl, '_blank');
-      addToast({
-        title: 'Đã tạo liên kết thanh toán, vui lòng kiểm tra!',
-        color: 'success',
-        variant: 'flat',
-        timeout: 4000,
-      });
+      if (paymentUrl) {
+        window.open(paymentUrl, '_blank');
+        addToast({
+          title: 'Đã tạo liên kết thanh toán, vui lòng kiểm tra!',
+          color: 'success',
+          variant: 'flat',
+          timeout: 4000,
+        });
+        setTimeout(() => checkPaymentStatus(bookingId), 5000);
+      } else {
+        throw new Error('Không nhận được URL thanh toán!');
+      }
     } catch (err: any) {
-      const msg = err.response?.data || 'Lỗi khi tạo thanh toán, vui lòng thử lại';
+      const msg = err.response?.data?.message || err.message || 'Lỗi khi tạo thanh toán, vui lòng thử lại';
       addToast({
         title: msg,
         color: 'danger',
@@ -138,8 +230,6 @@ export default function BookingList() {
     setIsModalOpen(true);
   };
 
-
-  // chỗ này nó đang lấy bookingId, nhưng cái mình cần là lawyer id
   const handleSubmitReview = async () => {
     if (!selectedBookingId || rating === 0 || !comment.trim()) {
       addToast({
@@ -152,8 +242,11 @@ export default function BookingList() {
     }
 
     try {
-      // nhận id của thằng luật sư
-      await axiosInstance.post(`/review/${selectedBookingId}`, {
+      const booking = bookings.find((b) => b._id === selectedBookingId);
+      if (!booking) {
+        throw new Error('Không tìm thấy booking!');
+      }
+      await axiosInstance.post(`/review/${booking.lawyer_id}`, {
         rating,
         comment,
       });
@@ -168,7 +261,7 @@ export default function BookingList() {
       setComment('');
       setSelectedBookingId(null);
     } catch (err: any) {
-      const msg = err.response?.data || 'Lỗi khi gửi đánh giá, vui lòng thử lại!';
+      const msg = err.response?.data?.message || 'Lỗi khi gửi đánh giá, vui lòng thử lại!';
       addToast({
         title: msg,
         color: 'danger',
@@ -185,7 +278,7 @@ export default function BookingList() {
     setSelectedBookingId(null);
   };
 
-  // Fetch lawyer names for lawyer_ids that don't have names yet
+  // Fetch lawyer names
   useEffect(() => {
     const lawyerIdsToFetch = bookings
       .map((b) => b.lawyer_id)
@@ -196,7 +289,7 @@ export default function BookingList() {
     const fetchLawyerNames = async () => {
       try {
         const promises = lawyerIdsToFetch.map((id) =>
-          axios.get(`http://localhost:8080/users/${id}`).then((res) => ({
+          axiosInstance.get(`/users/${id}`).then((res) => ({
             id,
             name: res.data.data.user.name || 'Unknown name',
           }))
@@ -219,7 +312,7 @@ export default function BookingList() {
     fetchLawyerNames();
   }, [bookings, lawyerNames]);
 
-  // Function to get the translated booking type
+  // Function to get translated booking type
   const getBookingTypeLabel = (typeBooking: string) => {
     if (!typeBooking) return '';
     const key = typeBooking as keyof typeof LawyerCategoriesVietnamese;
@@ -234,7 +327,7 @@ export default function BookingList() {
     <div
       style={{
         height: '70vh',
-        maxWidth: '1000px',
+        maxWidth: '100%',
         margin: 'auto',
         padding: 20,
         marginTop: 70,
@@ -342,20 +435,29 @@ export default function BookingList() {
                     {new Intl.NumberFormat('vi-VN').format(b.income)} VND
                   </TableCell>
                   <TableCell style={{ padding: '10px 8px' }}>
-                    {b.status === 'accept' && (
+                    {b.status === 'accept' && !b.isPaid && (
                       <Button
                         color="primary"
-                        onClick={() => handlePayment(b._id, b.income || 0)}
+                        onClick={() => handlePayment(b._id, b.income, b.lawyer_id, b.client_id || clientId || '')}
                         style={{ marginRight: '8px' }}
                       >
                         Thanh toán
+                      </Button>
+                    )}
+                    {b.status === 'accept' && b.isPaid && (
+                      <Button
+                        color="success"
+                        disabled
+                        style={{ marginRight: '8px', backgroundColor: '#5cb85c', color: '#fff' }}
+                      >
+                        Đã thanh toán
                       </Button>
                     )}
                     {b.status === 'done' && (
                       <Button
                         style={{ backgroundColor: '#ccc' }}
                         color="success"
-                        onClick={() => handleReview(b.lawyer_id)}
+                        onClick={() => handleReview(b._id)}
                       >
                         Đánh giá
                       </Button>
@@ -379,36 +481,36 @@ export default function BookingList() {
 
       {/* Modal for Review */}
       <Modal isOpen={isModalOpen} onClose={handleCloseModal}>
-  <ModalContent>
-    <ModalHeader>Đánh giá lịch hẹn</ModalHeader>
-    <ModalBody>
-      <label>Đánh giá</label>
-      <Input
-        type="number"
-        value={rating.toString()} // Chuyển đổi number sang string
-        onChange={(e) => setRating(Math.max(1, Math.min(5, Number(e.target.value))))}
-        min={1}
-        max={5}
-        style={{ marginBottom: '10px' }}
-      />
-      <label>Nhận xét chất lượng:</label>
-      <Textarea
-        value={comment}
-        onChange={(e) => setComment(e.target.value)}
-        rows={4}
-        style={{ marginBottom: '10px' }}
-      />
-    </ModalBody>
-    <ModalFooter>
-      <Button color="danger" onClick={handleCloseModal} style={{ marginRight: '8px' }}>
-        Hủy
-      </Button>
-      <Button color="success" onClick={handleSubmitReview}>
-        Gửi đánh giá
-      </Button>
-    </ModalFooter>
-  </ModalContent>
-</Modal>
+        <ModalContent>
+          <ModalHeader>Đánh giá lịch hẹn</ModalHeader>
+          <ModalBody>
+            <label>Đánh giá</label>
+            <Input
+              type="number"
+              value={rating.toString()}
+              onChange={(e) => setRating(Math.max(1, Math.min(5, Number(e.target.value))))}
+              min={1}
+              max={5}
+              style={{ marginBottom: '10px' }}
+            />
+            <label>Nhận xét chất lượng:</label>
+            <Textarea
+              value={comment}
+              onChange={(e) => setComment(e.target.value)}
+              rows={4}
+              style={{ marginBottom: '10px' }}
+            />
+          </ModalBody>
+          <ModalFooter>
+            <Button color="danger" onClick={handleCloseModal} style={{ marginRight: '8px' }}>
+              Hủy
+            </Button>
+            <Button color="success" onClick={handleSubmitReview}>
+              Gửi đánh giá
+            </Button>
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
     </div>
   );
 }
