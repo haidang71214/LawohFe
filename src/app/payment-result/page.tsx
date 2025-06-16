@@ -1,12 +1,20 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { Suspense, useEffect, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { addToast } from '@heroui/react';
 import Link from 'next/link';
 import { axiosInstance } from '@/fetchApi';
 
 export default function PaymentResult() {
+  return (
+    <Suspense fallback={<p>Đang xử lý kết quả thanh toán...</p>}>
+      <PaymentResultContent />
+    </Suspense>
+  );
+}
+
+function PaymentResultContent() {
   const searchParams = useSearchParams();
   const [paymentStatus, setPaymentStatus] = useState<string | null>(null);
   const [code, setCode] = useState<string | null>(null);
@@ -53,39 +61,39 @@ export default function PaymentResult() {
       const vnpTxnRef = searchParams.get('vnp_TxnRef');
       if (vnpTxnRef) {
         axiosInstance
-  .get(`/payment/get-payment-status/${vnpTxnRef}`)
-  .then((response) => {
-    const { status, txnRef } = response.data;
-    setPaymentStatus(status);
-    setTxnRef(txnRef);
-    setCode(status === 'success' ? '00' : '97'); // Map status to code
+          .get(`/payment/get-payment-status/${vnpTxnRef}`)
+          .then((response) => {
+            const { status, txnRef } = response.data;
+            setPaymentStatus(status);
+            setTxnRef(txnRef);
+            setCode(status === 'success' ? '00' : '97'); // Map status to code
 
-    if (status === 'success') {
-      addToast({
-        title: 'Thanh toán thành công!',
-        color: 'success',
-        variant: 'flat',
-        timeout: 4000,
-      });
-    } else {
-      addToast({
-        title: `Thanh toán thất bại. Mã lỗi: ${status === 'failed' ? '97' : 'unknown'}`,
-        color: 'danger',
-        variant: 'flat',
-        timeout: 4000,
-      });
-    }
-  })
-  .catch((error) => {
-    setPaymentStatus('error');
-    setErrorMessage('Lỗi khi lấy trạng thái thanh toán: ' + error.message);
-    addToast({
-      title: 'Lỗi khi lấy trạng thái thanh toán!',
-      color: 'danger',
-      variant: 'flat',
-      timeout: 4000,
-    });
-  });
+            if (status === 'success') {
+              addToast({
+                title: 'Thanh toán thành công!',
+                color: 'success',
+                variant: 'flat',
+                timeout: 4000,
+              });
+            } else {
+              addToast({
+                title: `Thanh toán thất bại. Mã lỗi: ${status === 'failed' ? '97' : 'unknown'}`,
+                color: 'danger',
+                variant: 'flat',
+                timeout: 4000,
+              });
+            }
+          })
+          .catch((error) => {
+            setPaymentStatus('error');
+            setErrorMessage('Lỗi khi lấy trạng thái thanh toán: ' + error.message);
+            addToast({
+              title: 'Lỗi khi lấy trạng thái thanh toán!',
+              color: 'danger',
+              variant: 'flat',
+              timeout: 4000,
+            });
+          });
       }
     }
   }, [searchParams]);
