@@ -52,8 +52,8 @@ export default function UserChatLawyer({ id, onClose }: UserChatLawyerProps) {
         return;
       }
       setUserId(currentUserId);
-
-      const newSocket = io('http://localhost:8080', {
+// 8080
+      const newSocket = io('https://lawohbe.onrender.com', {
         transports: ['websocket', 'polling'],
       });
       setSocket(newSocket);
@@ -64,7 +64,8 @@ export default function UserChatLawyer({ id, onClose }: UserChatLawyerProps) {
       const fetchMessages = async () => {
         setIsLoading(true);
         try {
-          const response = await axios.get(`http://localhost:8080/chat/messages/${id}`);
+          // 8080
+          const response = await axios.get(`https://lawohbe.onrender.com/chat/messages/${id}`);
           console.log('Messages API Response:', response.data);
           const transformedMessages = response.data.map((msg: any) => ({
             _id: msg._id,

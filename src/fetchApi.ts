@@ -1,8 +1,9 @@
 import axios from "axios";
 import { LOGIN_USER } from "./constant/enum";
 
-
-export const BASE_URL = "http://localhost:8080";
+// 
+// http://localhost:8080
+export const BASE_URL = "https://lawohbe.onrender.com"
 // cấu hình mang tiếng là nâng cao, nhma mình sẽ tận dụng cái nâng cao này cho nó lỏ lỏ xíu 
 export const axiosInstance = axios.create({
    baseURL: `${BASE_URL}`,

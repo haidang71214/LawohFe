@@ -91,7 +91,8 @@ export default function DocumentIndex({ typeDocument }: DocumentIndexProps) {
   const handleDownloadForm = async (id: string, mainContent: string) => {
     setDownloading(id);
     try {
-      const response = await fetch(`http://localhost:8080/form/download/${id}`, {
+      //  8080
+      const response = await fetch(`https://lawohbe.onrender.com/form/download/${id}`, {
         method: "GET",
         headers: {
           Accept: "application/pdf",
