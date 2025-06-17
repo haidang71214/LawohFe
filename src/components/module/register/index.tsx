@@ -24,28 +24,18 @@ export default function RegisterIndex() {
     setLoading(true);
   
     try {
-      // Tạo FormData để gửi dữ liệu dạng multipart (bao gồm file ảnh)
       const formData = new FormData();
-  
       formData.append('email', email);
       formData.append('password', password);
       formData.append('phone', phone);
       formData.append('name', userName);
       formData.append('age', age);
       formData.append('province', province);
-      if (img) {
-        formData.append('img', img); // Gửi file ảnh nếu có
-      }
+      if (img) formData.append('img', img);
   
-  
-      const response = await axiosInstance.post('/auth/register', formData, {
-        headers: {
-          'Content-Type': 'multipart/form-data',
-        },
-      });
+      const response = await axiosInstance.post('/auth/register', formData); // Loại bỏ headers
   
       console.log('Đăng ký thành công:', response.data);
-  
       addToast({
         title: 'Thành công',
         description: 'Đăng ký tài khoản thành công!',
@@ -54,21 +44,17 @@ export default function RegisterIndex() {
         timeout: 4000,
       });
   
-      // Reset form sau khi đăng ký thành công
-      setEmail('');
-      setUserName('');
-      setPassword('');
-      setPhone('');
-      setAge('');
-      setProvince('');
-      setImg(null);
-    } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Đã xảy ra lỗi không xác định';
-      console.error('Lỗi đăng ký:', errorMessage);
-  
+      setEmail(''); setUserName(''); setPassword(''); setPhone('');
+      setAge(''); setProvince(''); setImg(null);
+    } catch (err : any) {
+      console.error('Lỗi đăng ký chi tiết:', {
+        message: err.message,
+        response: err.response ? err.response.data : 'No response',
+        status: err.response ? err.response.status : 'No status',
+      });
       addToast({
         title: 'Lỗi',
-        description: 'Đăng ký tài khoản thất bại. Vui lòng thử lại.',
+        description: err.response ? err.response.data.message : 'Đã xảy ra lỗi không xác định',
         color: 'danger',
         variant: 'flat',
         timeout: 4000,
