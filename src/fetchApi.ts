@@ -11,15 +11,15 @@ export const axiosInstance = axios.create({
 
 // Add a request interceptor to include the Bearer token in all requests
 axiosInstance.interceptors.request.use(
-   (config: any) => {
-     const token = localStorage.getItem(LOGIN_USER);
-     if (token && config.url !== '/auth/register') { // Bỏ token cho đăng ký
-       config.headers["Authorization"] = `Bearer ${token}`;
-     }
-     return config;
+   (config:any) => {
+      const token = localStorage.getItem(LOGIN_USER);
+      if (token) {
+         config.headers["Authorization"] = `Bearer ${token}`;
+      }
+      return config;
    },
    (error) => Promise.reject(error)
- );
+);
 // acesstoken / resetToken / 7d
 // Function to extend the token when expired
 const extendToken = async () => {
