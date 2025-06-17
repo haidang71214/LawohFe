@@ -29,12 +29,12 @@ export default function RegisterIndex() {
       formData.append('password', password);
       formData.append('phone', phone);
       formData.append('name', userName);
-      formData.append('age', age);
-      formData.append('province', province);
       if (img) formData.append('img', img);
-  
-      const response = await axiosInstance.post('/auth/register', formData); // Loại bỏ headers
-  
+      formData.append('age', age);
+      formData.append('province', province);  
+      const response = await axiosInstance.post('/auth/register', formData, {
+        headers: { 'Authorization': null }, // Bỏ qua token cho đăng ký
+      });
       console.log('Đăng ký thành công:', response.data);
       addToast({
         title: 'Thành công',
