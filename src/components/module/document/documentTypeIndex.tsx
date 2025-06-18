@@ -1,6 +1,6 @@
 "use client";
 import React, { useState, useEffect } from "react";
-import { axiosInstance } from "@/fetchApi";
+import { axiosInstance, BASE_URL } from "@/fetchApi";
 import { Button, Modal, ModalBody, ModalContent, ModalFooter, ModalHeader } from "@heroui/react";
 import styles from "./DocumentCard.module.css";
 import { LawyerCategories } from "@/components/common/EnumCommon";
@@ -92,7 +92,7 @@ export default function DocumentIndex({ typeDocument }: DocumentIndexProps) {
     setDownloading(id);
     try {
       //  8080
-      const response = await fetch(`https://lawohbe.onrender.com/form/download/${id}`, {
+      const response = await fetch(`${BASE_URL}/form/download/${id}`, {
         method: "GET",
         headers: {
           Accept: "application/pdf",

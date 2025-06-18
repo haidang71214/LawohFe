@@ -1,5 +1,6 @@
 'use client';
 import { USER_PROFILE } from '@/constant/enum';
+import { BASE_URL } from '@/fetchApi';
 import { addToast } from '@heroui/toast';
 import axios from 'axios';
 import React, { useEffect, useRef, useState } from 'react';
@@ -53,7 +54,7 @@ export default function UserChatLawyer({ id, onClose }: UserChatLawyerProps) {
       }
       setUserId(currentUserId);
 // 8080
-      const newSocket = io('https://lawohbe.onrender.com', {
+      const newSocket = io(BASE_URL, {
         transports: ['websocket', 'polling'],
       });
       setSocket(newSocket);
@@ -65,7 +66,7 @@ export default function UserChatLawyer({ id, onClose }: UserChatLawyerProps) {
         setIsLoading(true);
         try {
           // 8080
-          const response = await axios.get(`https://lawohbe.onrender.com/chat/messages/${id}`);
+          const response = await axios.get(`${BASE_URL}/chat/messages/${id}`);
           console.log('Messages API Response:', response.data);
           const transformedMessages = response.data.map((msg: any) => ({
             _id: msg._id,

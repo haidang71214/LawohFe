@@ -24,32 +24,7 @@ import { Plus, FileText, Calendar } from "lucide-react";
 import { axiosInstance } from "@/fetchApi"; // Ensure this is correctly defined
 import { addToast } from "@heroui/toast";
 import './index.css';
-// Enum and categories
-enum ETypeLawyer {
-  INSURANCE = "INSURANCE",
-  CIVIL = "CIVIL",
-  CRIMINAL = "CRIMINAL",
-  FAMILY = "FAMILY",
-  BUSINESS = "BUSINESS",
-  REAL_ESTATE = "REAL_ESTATE",
-  LABOR = "LABOR",
-  ADMINISTRATIVE = "ADMINISTRATIVE",
-  TAX = "TAX",
-  INTELLECTUAL_PROPERTY = "INTELLECTUAL_PROPERTY",
-}
-
-const LawyerCategories = {
-  INSURANCE: "Bảo hiểm",
-  CIVIL: "Dân sự",
-  CRIMINAL: "Đất đai",
-  FAMILY: "Giao thông - Vận tải",
-  BUSINESS: "Hành chính",
-  REAL_ESTATE: "Hình sự",
-  LABOR: "Hôn nhân gia đình",
-  ADMINISTRATIVE: "Lao động",
-  TAX: "Thuế kế - Dí chúc",
-  INTELLECTUAL_PROPERTY: "Thuế",
-};
+import { ETypeLawyer } from "@/components/common/EnumCommon"; // Import enum từ file chung
 
 interface Form {
   _id: string;
@@ -161,7 +136,7 @@ export default function ManagerFormIndex() {
   };
 
   return (
-    <div className="container mx-auto py-6 space-y-6" style={{marginTop:100,paddingLeft:'10%'}}>
+    <div className="container mx-auto py-6 space-y-6" style={{ marginTop: 100, paddingLeft: '10%' }}>
       {/* Header with Add Button */}
       <div className="flex items-center justify-between">
         <div>
@@ -197,9 +172,9 @@ export default function ManagerFormIndex() {
                     <SelectValue placeholder="Chọn loại form" />
                   </SelectTrigger>
                   <SelectContent>
-                    {Object.entries(LawyerCategories).map(([key, value]) => (
-                      <SelectItem key={key} value={key}>
-                        {value}
+                    {Object.values(ETypeLawyer).map((typeValue) => (
+                      <SelectItem key={typeValue} value={typeValue}>
+                        {typeValue} {/* Hiển thị tên tiếng Anh */}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -261,7 +236,7 @@ export default function ManagerFormIndex() {
                   <div className="flex-1">
                     <div className="flex items-center gap-2 mb-1">
                       <span className="text-sm text-blue-600 font-medium">
-                        Loại: {LawyerCategories[form.type as keyof typeof LawyerCategories] || form.type}
+                        Loại: {form.type} {/* Hiển thị tên tiếng Anh */}
                       </span>
                     </div>
                     <div className="font-medium text-foreground">
