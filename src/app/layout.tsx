@@ -36,12 +36,12 @@ export default function RootLayout({
         {/* Correctly wrap your children with ToastProvider */}
         <Providers>
           {/* gán video vô đây */}
-          <VideoCallProvider> 
-        <ChatProvider>
-          {children}
-          <VideoCall />
-          </ChatProvider>
-          </VideoCallProvider>
+          <VideoCallProvider>
+  <ChatProvider>
+    {children}
+    <VideoCall />
+  </ChatProvider>
+</VideoCallProvider>
         </Providers>
       </body>
     </html>

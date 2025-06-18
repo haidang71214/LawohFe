@@ -105,7 +105,7 @@ export default function DetailLawyer({ id }: DetailLawyerProps) {
   const [errorReviews, setErrorReviews] = useState<string | null>(null);
   const [isOpen, setIsOpen] = useState(false);
   const { setIsCallOpen, setClientId, setLawyerId } = useVideoCall(); // dùng cái useVideoCall mình setup
-  
+  const [isPermissionModalOpen, setIsPermissionModalOpen] = useState(false);
 // gọi hàm này ra
 const handleStartVideoCall = async () => {
   try {
@@ -157,6 +157,42 @@ const handleStartVideoCall = async () => {
   }
 };
 
+const handlePermissionConfirm = async (confirmed: boolean) => {
+  setIsPermissionModalOpen(false);
+  if (confirmed) {
+    const userProfileStr = localStorage.getItem(USER_PROFILE) || '';
+    if (!userProfileStr) {
+      addToast({
+        title: 'Bạn phải đăng nhập trước khi gọi',
+        description: 'Vui lòng đăng nhập!',
+        color: 'danger',
+        variant: 'flat',
+        timeout: 4000,
+      });
+      return;
+    }
+    const userProfile = JSON.parse(userProfileStr) as { _id?: any };
+    setClientId(userProfile._id);
+    setLawyerId(id);
+    setIsCallOpen(true);
+
+    addToast({
+      title: 'Bắt đầu cuộc gọi video',
+      description: 'Đang kết nối với luật sư...',
+      color: 'success',
+      variant: 'flat',
+      timeout: 3000,
+    });
+  } else {
+    addToast({
+      title: 'Cuộc gọi bị hủy',
+      description: 'Bạn đã từ chối truy cập camera/microphone.',
+      color: 'warning',
+      variant: 'flat',
+      timeout: 3000,
+    });
+  }
+}
   const [formData, setFormData] = useState({
     client_id: '',
     lawyer_id: '',
@@ -694,28 +730,67 @@ const handleStartVideoCall = async () => {
           >
             {hasExistingConversation ? 'Nhắn tiếp' : 'Tạo tin nhắn'}
           </Button>
-              <Button
-        color="success"
-        style={{
-          background: 'linear-gradient(135deg, #22C55E, #16A34A)',
-          color: '#F9FAFB',
-          padding: '12px 30px',
-          border: 'none',
-          borderRadius: '25px',
-          fontSize: '16px',
-          fontWeight: '600',
-          boxShadow: '0 3px 10px rgba(0, 0, 0, 0.2)',
-          transition: 'transform 0.2s ease, background 0.3s ease',
-          marginLeft: '10px',
-        }}
-        onMouseEnter={(e) => (e.currentTarget.style.transform = 'scale(1.05)')}
-        onMouseLeave={(e) => (e.currentTarget.style.transform = 'scale(1)')}
-        onPress={handleStartVideoCall}
-      >
-        Gọi ngay
-      </Button>
+      {/* Experience Card */}
+      <div style={{ flex: '0 0 280px', background: 'linear-gradient(135deg, #1E3A8A, #3B82F6)', borderRadius: '15px', padding: '30px', textAlign: 'center', color: '#F9FAFB', boxShadow: '0 4px 15px rgba(0, 0, 0, 0.2)', transition: 'transform 0.3s ease' }} onMouseEnter={(e) => (e.currentTarget.style.transform = 'translateY(-5px)')} onMouseLeave={(e) => (e.currentTarget.style.transform = 'translateY(0)')}>
+          <div style={{ fontSize: 56, fontWeight: '700', marginBottom: 12, color: '#FBBF24' }}>{lawyer.experienceYear || 0}</div>
+          <div style={{ fontSize: 16, fontWeight: '600', color: '#D1D5DB' }}>năm kinh nghiệm làm việc</div>
+          <Button
+            onClick={() => handleChatAction()}
+            style={{ marginTop: '20px', background: 'linear-gradient(135deg, #FBBF24, #F59E0B)', color: '#1E3A8A', padding: '10px 20px', border: 'none', borderRadius: '20px', fontSize: '15px', fontWeight: '600', boxShadow: '0 3px 10px rgba(0, 0, 0, 0.2)', transition: 'transform 0.2s ease, background 0.3s ease' }}
+            onMouseEnter={(e) => (e.currentTarget.style.transform = 'scale(1.05)')}
+            onMouseLeave={(e) => (e.currentTarget.style.transform = 'scale(1)')}
+          >
+            {hasExistingConversation ? 'Nhắn tiếp' : 'Tạo tin nhắn'}
+          </Button>
+          <Button
+            color="success"
+            style={{ background: 'linear-gradient(135deg, #22C55E, #16A34A)', color: '#F9FAFB', padding: '12px 30px', border: 'none', borderRadius: '25px', fontSize: '16px', fontWeight: '600', boxShadow: '0 3px 10px rgba(0, 0, 0, 0.2)', transition: 'transform 0.2s ease, background 0.3s ease', marginLeft: '10px' }}
+            onMouseEnter={(e) => (e.currentTarget.style.transform = 'scale(1.05)')}
+            onMouseLeave={(e) => (e.currentTarget.style.transform = 'scale(1)')}
+            onPress={handleStartVideoCall}
+          >
+            Gọi ngay
+          </Button>
         </div>
       </div>
+
+      {/* Reviews Section giữ nguyên */}
+      {/* Modal Booking giữ nguyên */}
+
+      {/* Modal xin quyền */}
+      <Modal
+        isOpen={isPermissionModalOpen}
+        onOpenChange={setIsPermissionModalOpen}
+        placement="top-center"
+        style={{ background: 'linear-gradient(135deg, #f5f7fa, #c3cfe2)', borderRadius: '15px', boxShadow: '0 5px 20px rgba(0, 0, 0, 0.3)' }}
+      >
+        <ModalContent>
+          <ModalHeader style={{ fontSize: '20px', color: '#1E3A8A', fontWeight: '700' }}>
+            Xác nhận quyền truy cập
+          </ModalHeader>
+          <ModalBody style={{ textAlign: 'center' }}>
+            <p>Bạn có muốn cấp quyền truy cập camera và microphone để bắt đầu cuộc gọi video không?</p>
+          </ModalBody>
+          <ModalFooter>
+            <Button
+              color="danger"
+              variant="flat"
+              onPress={() => handlePermissionConfirm(false)}
+              style={{ background: 'linear-gradient(135deg, #EF4444, #DC2626)', color: '#F9FAFB', padding: '8px 20px', borderRadius: '20px' }}
+            >
+              Không
+            </Button>
+            <Button
+              color="success"
+              onPress={() => handlePermissionConfirm(true)}
+              style={{ background: 'linear-gradient(135deg, #22C55E, #16A34A)', color: '#F9FAFB', padding: '8px 20px', borderRadius: '20px', marginLeft: '10px' }}
+            >
+              Có
+            </Button>
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
+        </div>
 
       {/* Reviews Section */}
       <div style={{ maxWidth: 940, margin: '0 auto', padding: '40px 0' }}>

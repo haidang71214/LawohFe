@@ -30,28 +30,41 @@ export default function VideoCall() {
   }, []);
 
   useEffect(() => {
+    console.log('isCallOpen:', isCallOpen, 'clientId:', clientId, 'lawyerId:', lawyerId, 'AgoraRTC:', AgoraRTC);
     if (isCallOpen && clientId && lawyerId && AgoraRTC) {
       startCall();
     } else if (!isCallOpen && clientRef.current) {
       leaveCall();
     }
   }, [isCallOpen, clientId, lawyerId, AgoraRTC]);
-
+  useEffect(() => {
+    if (typeof window !== 'undefined' && AgoraRTC) {
+      navigator.mediaDevices
+        .getUserMedia({ video: true, audio: true })
+        .then((stream) => {
+          console.log('Media devices accessed successfully:', stream);
+          stream.getTracks().forEach((track) => track.stop()); // Stop stream to avoid preview
+        })
+        .catch((err) => {
+          console.log('Error requesting media devices:', err);
+          addToast({
+            title: 'Lỗi quyền truy cập',
+            description: 'Vui lòng cho phép camera và microphone trong trình duyệt.',
+            color: 'danger',
+            variant: 'flat',
+            timeout: 4000,
+          });
+        });
+    }
+  }, [AgoraRTC]);
   const startCall = async () => {
-    if (!clientRef.current || !AgoraRTC) return;
+    if (!clientRef.current || !AgoraRTC) {
+      console.error('Client hoặc AgoraRTC chưa sẵn sàng');
+      return;
+    }
     try {
-      const shit = localStorage.getItem(USER_PROFILE);
-      const response = await axiosInstance.get(`/video/TokenCallVideo/${clientId}/${lawyerId}`);
-      const { data } = response.data;
-      console.log(response);
-
-      await clientRef.current.join(data.appId, data.channelName, data.token, Number(clientId));
-      const localStream = await AgoraRTC.createCameraVideoTrack();
-      await clientRef.current.publish(localStream);
-      if (localVideoRef.current) {
-        localStream.play(localVideoRef.current);
-      }
-      if (!shit) {
+      const userProfileStr = localStorage.getItem(USER_PROFILE); // Thay 'shit' bằng tên biến rõ ràng
+      if (!userProfileStr) {
         addToast({
           title: `Chưa đăng nhập`,
           description: `Bạn cần đăng nhập để tham gia gọi`,
@@ -60,7 +73,50 @@ export default function VideoCall() {
           timeout: 3000,
         });
         router.push('/login');
+        return;
       }
+  
+      const response = await axiosInstance.get(`/video/TokenCallVideo/${clientId}/${lawyerId}`);
+      console.log('API Response:', response.data);
+      const { data } = response.data;
+      if (!data?.appId || !data?.channelName || !data?.token) {
+        throw new Error('Dữ liệu token từ API không hợp lệ');
+      }
+  
+      // Kiểm tra quyền truy cập thiết bị mà không gán vào biến stream
+      await navigator.mediaDevices.getUserMedia({ video: true, audio: true }).catch((err) => {
+        console.error('Lỗi quyền truy cập thiết bị:', err);
+        addToast({
+          title: 'Lỗi quyền truy cập',
+          description: 'Vui lòng cho phép camera và microphone trong trình duyệt.',
+          color: 'danger',
+          variant: 'flat',
+          timeout: 4000,
+        });
+        throw err;
+      });
+  
+      // Sử dụng clientId trực tiếp (chuỗi) vì token được tạo từ buildTokenWithAccount
+      await clientRef.current.join(data.appId, data.channelName, data.token, clientId);
+      const localStream = await AgoraRTC.createCameraVideoTrack();
+      await clientRef.current.publish(localStream);
+  
+      if (localVideoRef.current) {
+        try {
+          await localStream.play(localVideoRef.current);
+          console.log('Video playing on localVideoRef');
+        } catch (e) {
+          console.error('Lỗi khi play video:', e);
+          addToast({
+            title: 'Lỗi video',
+            description: 'Không thể hiển thị video. Kiểm tra quyền camera.',
+            color: 'danger',
+            variant: 'flat',
+            timeout: 4000,
+          });
+        }
+      }
+  
       clientRef.current.on('user-published', async (user: any, mediaType: 'audio' | 'video' | 'datachannel') => {
         console.log(`Người dùng ${user.uid} tham gia với mediaType: ${mediaType}`);
         await clientRef.current.subscribe(user, mediaType);
@@ -78,7 +134,7 @@ export default function VideoCall() {
           timeout: 3000,
         });
       });
-
+  
       clientRef.current.on('user-unpublished', (user: any) => {
         console.log(`Người dùng ${user.uid} đã rời cuộc gọi`);
         if (remoteVideoRef.current) {
@@ -92,15 +148,33 @@ export default function VideoCall() {
           timeout: 3000,
         });
       });
-    } catch (error) {
+    } catch (error : any) {
       console.error('Lỗi khi khởi tạo cuộc gọi:', error);
-      addToast({
-        title: 'Lỗi gọi video',
-        description: 'Vui lòng thử lại sau',
-        color: 'danger',
-        variant: 'flat',
-        timeout: 4000,
-      });
+      if (error.message.includes('NotAllowedError') || error.message.includes('Permission denied')) {
+        addToast({
+          title: 'Lỗi quyền truy cập',
+          description: 'Vui lòng cho phép camera và microphone.',
+          color: 'danger',
+          variant: 'flat',
+          timeout: 4000,
+        });
+      } else if (error.message.includes('NotFoundError')) {
+        addToast({
+          title: 'Lỗi thiết bị',
+          description: 'Không tìm thấy camera hoặc microphone.',
+          color: 'danger',
+          variant: 'flat',
+          timeout: 4000,
+        });
+      } else {
+        addToast({
+          title: 'Lỗi gọi video',
+          description: 'Vui lòng thử lại sau',
+          color: 'danger',
+          variant: 'flat',
+          timeout: 4000,
+        });
+      }
     }
   };
 
