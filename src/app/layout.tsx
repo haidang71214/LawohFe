@@ -5,6 +5,8 @@ import "./globals.css";
 import '../../src/output.css';
 import Providers from "./provider";
 import { ChatProvider } from "@/components/common/chatContext";
+import { VideoCallProvider } from "@/components/common/videoCallContext";
+import VideoCall from "@/components/common/VideoCall";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -33,9 +35,13 @@ export default function RootLayout({
       >
         {/* Correctly wrap your children with ToastProvider */}
         <Providers>
+          {/* gán video vô đây */}
+          <VideoCallProvider> 
         <ChatProvider>
           {children}
+          <VideoCall />
           </ChatProvider>
+          </VideoCallProvider>
         </Providers>
       </body>
     </html>

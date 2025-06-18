@@ -5,7 +5,7 @@ import { axiosInstance } from '@/fetchApi';
 import { Button, Modal, Input, Textarea, Select, SelectItem, ModalHeader, ModalBody, ModalFooter, ModalContent, addToast } from '@heroui/react';
 import { USER_PROFILE } from '@/constant/enum';
 import { useChat } from '@/components/common/chatContext';
-
+import { useVideoCall } from '@/components/common/videoCallContext';
 const LawyerCategories: Record<string, string> = {
   INSURANCE: 'Bảo hiểm',
   CIVIL: 'Dân sự',
@@ -104,6 +104,58 @@ export default function DetailLawyer({ id }: DetailLawyerProps) {
   const [loadingReviews, setLoadingReviews] = useState(false);
   const [errorReviews, setErrorReviews] = useState<string | null>(null);
   const [isOpen, setIsOpen] = useState(false);
+  const { setIsCallOpen, setClientId, setLawyerId } = useVideoCall(); // dùng cái useVideoCall mình setup
+  
+// gọi hàm này ra
+const handleStartVideoCall = async () => {
+  try {
+    const userProfileStr = localStorage.getItem(USER_PROFILE) || '';
+    if (!userProfileStr) {
+      addToast({
+        title: 'Bạn phải đăng nhập trước khi gọi',
+        description: 'Vui lòng đăng nhập!',
+        color: 'danger',
+        variant: 'flat',
+        timeout: 4000,
+      });
+      return;
+    }
+
+    const userProfile = JSON.parse(userProfileStr) as { _id?: string };
+    const clientId = userProfile._id;
+    if (!clientId) {
+      addToast({
+        title: 'Không tìm thấy thông tin người dùng',
+        description: 'Vui lòng đăng nhập lại!',
+        color: 'danger',
+        variant: 'flat',
+        timeout: 4000,
+      });
+      return;
+    }
+    // Cập nhật context để bắt đầu cuộc gọi
+    setClientId(clientId);
+    setLawyerId(id);
+    setIsCallOpen(true);
+
+    addToast({
+      title: 'Bắt đầu cuộc gọi video',
+      description: 'Đang kết nối với luật sư...',
+      color: 'success',
+      variant: 'flat',
+      timeout: 3000,
+    });
+  } catch (error: any) {
+    console.error('Lỗi khi bắt đầu cuộc gọi:', error);
+    addToast({
+      title: 'Lỗi khởi tạo cuộc gọi',
+      description: 'Vui lòng thử lại sau',
+      color: 'danger',
+      variant: 'flat',
+      timeout: 4000,
+    });
+  }
+};
 
   const [formData, setFormData] = useState({
     client_id: '',
@@ -642,6 +694,26 @@ export default function DetailLawyer({ id }: DetailLawyerProps) {
           >
             {hasExistingConversation ? 'Nhắn tiếp' : 'Tạo tin nhắn'}
           </Button>
+              <Button
+        color="success"
+        style={{
+          background: 'linear-gradient(135deg, #22C55E, #16A34A)',
+          color: '#F9FAFB',
+          padding: '12px 30px',
+          border: 'none',
+          borderRadius: '25px',
+          fontSize: '16px',
+          fontWeight: '600',
+          boxShadow: '0 3px 10px rgba(0, 0, 0, 0.2)',
+          transition: 'transform 0.2s ease, background 0.3s ease',
+          marginLeft: '10px',
+        }}
+        onMouseEnter={(e) => (e.currentTarget.style.transform = 'scale(1.05)')}
+        onMouseLeave={(e) => (e.currentTarget.style.transform = 'scale(1)')}
+        onPress={handleStartVideoCall}
+      >
+        Gọi ngay
+      </Button>
         </div>
       </div>
 
