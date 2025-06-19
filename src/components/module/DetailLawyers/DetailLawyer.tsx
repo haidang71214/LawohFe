@@ -93,7 +93,11 @@ function translateTypeLawyer(typeInput: string[] | string | undefined): string {
 
   return 'Chưa có thông tin';
 }
-
+interface RoomEvent {
+  info: {
+    userId: string;
+  };
+}
 export default function DetailLawyer({ id }: DetailLawyerProps) {
   const [lawyer, setLawyer] = useState<Lawyer | null>(null);
   const [loading, setLoading] = useState(true);
@@ -104,95 +108,8 @@ export default function DetailLawyer({ id }: DetailLawyerProps) {
   const [loadingReviews, setLoadingReviews] = useState(false);
   const [errorReviews, setErrorReviews] = useState<string | null>(null);
   const [isOpen, setIsOpen] = useState(false);
-  const { setIsCallOpen, setClientId, setLawyerId } = useVideoCall(); // dùng cái useVideoCall mình setup
-  const [isPermissionModalOpen, setIsPermissionModalOpen] = useState(false);
+  
 // gọi hàm này ra
-const handleStartVideoCall = async () => {
-  try {
-    const userProfileStr = localStorage.getItem(USER_PROFILE) || '';
-    if (!userProfileStr) {
-      addToast({
-        title: 'Bạn phải đăng nhập trước khi gọi',
-        description: 'Vui lòng đăng nhập!',
-        color: 'danger',
-        variant: 'flat',
-        timeout: 4000,
-      });
-      return;
-    }
-
-    const userProfile = JSON.parse(userProfileStr) as { _id?: string };
-    const clientId = userProfile._id;
-    if (!clientId) {
-      addToast({
-        title: 'Không tìm thấy thông tin người dùng',
-        description: 'Vui lòng đăng nhập lại!',
-        color: 'danger',
-        variant: 'flat',
-        timeout: 4000,
-      });
-      return;
-    }
-    // Cập nhật context để bắt đầu cuộc gọi
-    setClientId(clientId);
-    setLawyerId(id);
-    setIsCallOpen(true);
-
-    addToast({
-      title: 'Bắt đầu cuộc gọi video',
-      description: 'Đang kết nối với luật sư...',
-      color: 'success',
-      variant: 'flat',
-      timeout: 3000,
-    });
-  } catch (error: any) {
-    console.error('Lỗi khi bắt đầu cuộc gọi:', error);
-    addToast({
-      title: 'Lỗi khởi tạo cuộc gọi',
-      description: 'Vui lòng thử lại sau',
-      color: 'danger',
-      variant: 'flat',
-      timeout: 4000,
-    });
-  }
-};
-
-const handlePermissionConfirm = async (confirmed: boolean) => {
-  setIsPermissionModalOpen(false);
-  if (confirmed) {
-    const userProfileStr = localStorage.getItem(USER_PROFILE) || '';
-    if (!userProfileStr) {
-      addToast({
-        title: 'Bạn phải đăng nhập trước khi gọi',
-        description: 'Vui lòng đăng nhập!',
-        color: 'danger',
-        variant: 'flat',
-        timeout: 4000,
-      });
-      return;
-    }
-    const userProfile = JSON.parse(userProfileStr) as { _id?: any };
-    setClientId(userProfile._id);
-    setLawyerId(id);
-    setIsCallOpen(true);
-
-    addToast({
-      title: 'Bắt đầu cuộc gọi video',
-      description: 'Đang kết nối với luật sư...',
-      color: 'success',
-      variant: 'flat',
-      timeout: 3000,
-    });
-  } else {
-    addToast({
-      title: 'Cuộc gọi bị hủy',
-      description: 'Bạn đã từ chối truy cập camera/microphone.',
-      color: 'warning',
-      variant: 'flat',
-      timeout: 3000,
-    });
-  }
-}
   const [formData, setFormData] = useState({
     client_id: '',
     lawyer_id: '',
@@ -205,7 +122,7 @@ const handlePermissionConfirm = async (confirmed: boolean) => {
   const [hasExistingConversation, setHasExistingConversation] = useState(false);
   const [conversationId, setConversationId] = useState<string | null>(null);
   const { openChat } = useChat();
-
+  const { setIsCallOpen, setClientId, setLawyerId, setRoomId, setRoomToken, setCallClient, setRoom } = useVideoCall();
   useEffect(() => {
     const checkConversation = async () => {
       try {
@@ -229,7 +146,168 @@ const handlePermissionConfirm = async (confirmed: boolean) => {
       checkConversation();
     }
   }, [id]);
-
+  // gọi video 
+  interface TrackInfo {
+    serverId: string;
+    // Thêm các thuộc tính khác nếu cần, dựa trên tài liệu Stringee
+  }
+  
+  const subscribe = async (trackInfo: TrackInfo, room: any) => {
+    try {
+      const track = await room.subscribe(trackInfo.serverId);
+      track.on('ready', () => {
+        const videoElement = track.attach();
+        videoElement.setAttribute('controls', 'true');
+        videoElement.setAttribute('playsinline', 'true');
+        document.getElementById('videos-container')?.appendChild(videoElement);
+      });
+    } catch (error) {
+      console.error('Error subscribing to track:', error);
+      addToast({
+        title: 'Lỗi khi đăng ký track',
+        description: 'Vui lòng thử lại.',
+        color: 'danger',
+        variant: 'flat',
+        timeout: 4000,
+      });
+    }
+  };
+  
+  const handleStartCall = async () => {
+    const userProfileStr = localStorage.getItem(USER_PROFILE) || '';
+    try {
+      const userProfile = JSON.parse(userProfileStr);
+      const clientId = userProfile._id;
+      if (!clientId) {
+        addToast({
+          title: 'Bạn phải đăng nhập trước khi gọi',
+          description: 'Vui lòng đăng nhập!',
+          color: 'danger',
+          variant: 'flat',
+          timeout: 4000,
+        });
+        return;
+      }
+  
+      // Gọi backend để tạo phòng
+      await axiosInstance.get('/string-geesetup/init');
+      const roomResponse = await axiosInstance.post('/string-geesetup/create-room', {
+        clientId,
+        lawyerId: lawyer?._id,
+      });
+      const { roomId } = roomResponse.data;
+      const roomTokenResponse = await axiosInstance.get(`/string-geesetup/room-token/${roomId}`);
+      const { roomToken } = roomTokenResponse.data;
+      const userTokenResponse = await axiosInstance.get(`/string-geesetup/user-token/${clientId}`);
+      const { userToken } = userTokenResponse.data;
+  
+      setClientId(clientId);
+      setLawyerId(lawyer?._id || '');
+      setRoomId(roomId);
+      setRoomToken(roomToken);
+  
+      // Khởi tạo Stringee client
+      if (!window.StringeeClient || !window.StringeeVideo) {
+        throw new Error('Stringee SDK not loaded');
+      }
+      const client = new window.StringeeClient();
+      client.on('authen', (res: any) => console.log('Authenticated:', res));
+      client.on('connect', () => console.log('Connected to Stringee Server'));
+      client.on('disconnect', () => console.log('Disconnected from Stringee Server'));
+      client.connect(userToken);
+      setCallClient(client);
+  
+      // Tạo luồng video cục bộ
+      const localTrack = await window.StringeeVideo.createLocalVideoTrack(client, {
+        audio: true,
+        video: true,
+        videoDimensions: { width: 640, height: 360 },
+      });
+  
+      const videoElement = localTrack.attach();
+      videoElement.setAttribute('controls', 'true');
+      videoElement.setAttribute('playsinline', 'true');
+      document.getElementById('videos-container')?.appendChild(videoElement);
+  
+      // Tham gia phòng
+      const roomData = await window.StringeeVideo.joinRoom(client, roomToken);
+      const room = roomData.room;
+      setRoom(room);
+  
+      // Sửa typo và thay thế clearAllOnMethos
+      room.off('joinroom');
+      room.off('leaveroom');
+      room.off('addtrack');
+      room.off('removetrack');
+  
+      room.on('joinroom', (event: RoomEvent) => {
+        console.log('User joined room:', event.info);
+        addToast({
+          title: 'Người dùng tham gia',
+          description: `User ${event.info.userId} đã tham gia.`,
+          color: 'success',
+          variant: 'flat',
+          timeout: 4000,
+        });
+      });
+      room.on('leaveroom', (event: RoomEvent) => {
+        console.log('User left room:', event.info);
+        addToast({
+          title: 'Người dùng đã rời phòng',
+          description: `User ${event.info.userId} đã rời.`,
+          color: 'warning',
+          variant: 'flat',
+          timeout: 4000,
+        });
+      });
+      room.on('addtrack', (e: { info: { track: TrackInfo } }) => {
+        const track = e.info.track;
+        if (track.serverId === localTrack.serverId) return;
+        if (room.getTracks().length > 2) {
+          console.log('Room full, rejecting new track');
+          return;
+        }
+        subscribe(track, room); // Truyền room vào subscribe
+      });
+      room.on('removetrack', (e: { track: any }) => {
+        const track = e.track;
+        if (!track) return;
+        const mediaElements = track.detach();
+        mediaElements.forEach((element: HTMLElement) => element.remove());
+      });
+  
+      roomData.listTracksInfo.forEach((info: TrackInfo) => subscribe(info, room));
+      await room.publish(localTrack);
+  
+      setIsCallOpen(true);
+      addToast({
+        title: 'Cuộc gọi đã bắt đầu!',
+        description: `Phòng họp ${roomId} đã được tạo.`,
+        color: 'success',
+        variant: 'flat',
+        timeout: 4000,
+      });
+  
+      // Gửi roomId cho luật sư qua chat
+      if (conversationId) {
+        await axiosInstance.post('/chat/message', {
+          conversationId,
+          senderId: clientId,
+          content: `Tham gia cuộc gọi video tại: ${window.location.origin}?room=${roomId}`,
+        });
+      }
+    } catch (error) {
+      console.error('Error starting call:', error);
+      addToast({
+        title: 'Lỗi khi bắt đầu cuộc gọi',
+        description: 'Vui lòng thử lại sau.',
+        color: 'danger',
+        variant: 'flat',
+        timeout: 4000,
+      });
+    }
+  };
+  //
   const fetchUserBookedLawyers = async () => {
     try {
       const userProfileStr = localStorage.getItem(USER_PROFILE) || '';
@@ -687,6 +765,39 @@ const handlePermissionConfirm = async (confirmed: boolean) => {
             >
               {isLawyerBooked ? 'Đặt thêm' : 'Đặt lịch ngay'}
             </Button>
+            <Button
+          color="success"
+          style={{
+            background: 'linear-gradient(135deg, #10B981, #059669)',
+            color: '#F9FAFB',
+            padding: '12px 30px',
+            borderRadius: '25px',
+            fontSize: '16px',
+            fontWeight: '600',
+            boxShadow: '0 3px 10px rgba(0, 0, 0, 0.2)',
+            transition: 'transform 0.2s ease',
+            marginLeft: '10px',
+          }}
+          onMouseEnter={(e) => (e.currentTarget.style.transform = 'scale(1.05)')}
+          onMouseLeave={(e) => (e.currentTarget.style.transform = 'scale(1)')}
+          onPress={handleStartCall}
+        >
+          <svg
+            className="w-5 h-5 mr-2"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+            xmlns="http://www.w3.org/2000/svg"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth="2"
+              d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"
+            />
+          </svg>
+          Gọi ngay
+        </Button>
           </div>
         </div>
 
@@ -734,62 +845,11 @@ const handlePermissionConfirm = async (confirmed: boolean) => {
       <div style={{ flex: '0 0 280px', background: 'linear-gradient(135deg, #1E3A8A, #3B82F6)', borderRadius: '15px', padding: '30px', textAlign: 'center', color: '#F9FAFB', boxShadow: '0 4px 15px rgba(0, 0, 0, 0.2)', transition: 'transform 0.3s ease' }} onMouseEnter={(e) => (e.currentTarget.style.transform = 'translateY(-5px)')} onMouseLeave={(e) => (e.currentTarget.style.transform = 'translateY(0)')}>
           <div style={{ fontSize: 56, fontWeight: '700', marginBottom: 12, color: '#FBBF24' }}>{lawyer.experienceYear || 0}</div>
           <div style={{ fontSize: 16, fontWeight: '600', color: '#D1D5DB' }}>năm kinh nghiệm làm việc</div>
-          <Button
-            onClick={() => handleChatAction()}
-            style={{ marginTop: '20px', background: 'linear-gradient(135deg, #FBBF24, #F59E0B)', color: '#1E3A8A', padding: '10px 20px', border: 'none', borderRadius: '20px', fontSize: '15px', fontWeight: '600', boxShadow: '0 3px 10px rgba(0, 0, 0, 0.2)', transition: 'transform 0.2s ease, background 0.3s ease' }}
-            onMouseEnter={(e) => (e.currentTarget.style.transform = 'scale(1.05)')}
-            onMouseLeave={(e) => (e.currentTarget.style.transform = 'scale(1)')}
-          >
-            {hasExistingConversation ? 'Nhắn tiếp' : 'Tạo tin nhắn'}
-          </Button>
-          <Button
-            color="success"
-            style={{ background: 'linear-gradient(135deg, #22C55E, #16A34A)', color: '#F9FAFB', padding: '12px 30px', border: 'none', borderRadius: '25px', fontSize: '16px', fontWeight: '600', boxShadow: '0 3px 10px rgba(0, 0, 0, 0.2)', transition: 'transform 0.2s ease, background 0.3s ease', marginLeft: '10px' }}
-            onMouseEnter={(e) => (e.currentTarget.style.transform = 'scale(1.05)')}
-            onMouseLeave={(e) => (e.currentTarget.style.transform = 'scale(1)')}
-            onPress={handleStartVideoCall}
-          >
-            Gọi ngay
-          </Button>
         </div>
       </div>
 
       {/* Reviews Section giữ nguyên */}
       {/* Modal Booking giữ nguyên */}
-
-      {/* Modal xin quyền */}
-      <Modal
-        isOpen={isPermissionModalOpen}
-        onOpenChange={setIsPermissionModalOpen}
-        placement="top-center"
-        style={{ background: 'linear-gradient(135deg, #f5f7fa, #c3cfe2)', borderRadius: '15px', boxShadow: '0 5px 20px rgba(0, 0, 0, 0.3)' }}
-      >
-        <ModalContent>
-          <ModalHeader style={{ fontSize: '20px', color: '#1E3A8A', fontWeight: '700' }}>
-            Xác nhận quyền truy cập
-          </ModalHeader>
-          <ModalBody style={{ textAlign: 'center' }}>
-            <p>Bạn có muốn cấp quyền truy cập camera và microphone để bắt đầu cuộc gọi video không?</p>
-          </ModalBody>
-          <ModalFooter>
-            <Button
-              color="danger"
-              variant="flat"
-              onPress={() => handlePermissionConfirm(false)}
-              style={{ background: 'linear-gradient(135deg, #EF4444, #DC2626)', color: '#F9FAFB', padding: '8px 20px', borderRadius: '20px' }}
-            >
-              Không
-            </Button>
-            <Button
-              color="success"
-              onPress={() => handlePermissionConfirm(true)}
-              style={{ background: 'linear-gradient(135deg, #22C55E, #16A34A)', color: '#F9FAFB', padding: '8px 20px', borderRadius: '20px', marginLeft: '10px' }}
-            >
-              Có
-            </Button>
-          </ModalFooter>
-        </ModalContent>
-      </Modal>
         </div>
 
       {/* Reviews Section */}

@@ -6,7 +6,7 @@ import '../../src/output.css';
 import Providers from "./provider";
 import { ChatProvider } from "@/components/common/chatContext";
 import { VideoCallProvider } from "@/components/common/videoCallContext";
-import VideoCall from "@/components/common/VideoCall";
+import VideoCall from "@/components/common/GlocalCallModal";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -30,6 +30,10 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
+      <head>
+        {/* Tải Stringee Web SDK */}
+        <script src="https://cdn.stringee.com/sdk/web/latest/stringee-web-sdk.min.js" async />
+      </head>
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >

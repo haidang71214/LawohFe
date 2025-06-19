@@ -27,3 +27,6 @@ export enum LawyerCategories { // tiếng việt
   INHERITANCE = 'INHERITANCE',
   TAX = 'TAX',
 }
+// lấy 2 cái này để lấy cái api stringeeee
+export const API_SID_KEY='SK.0.JbYfWyuA6qnU47d7M47ARbPbuvRsf0'
+export const API_SECRET_KEY='dm1YZDNTNWVTRTBDSDFZZnZhTEFKejRwc3lVMUhXTHk='
