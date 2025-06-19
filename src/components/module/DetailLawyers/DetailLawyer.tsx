@@ -6,6 +6,7 @@ import { Button, Modal, Input, Textarea, Select, SelectItem, ModalHeader, ModalB
 import { USER_PROFILE } from '@/constant/enum';
 import { useChat } from '@/components/common/chatContext';
 import { useVideoCall } from '@/components/common/videoCallContext';
+
 const LawyerCategories: Record<string, string> = {
   INSURANCE: 'Bảo hiểm',
   CIVIL: 'Dân sự',
@@ -93,11 +94,11 @@ function translateTypeLawyer(typeInput: string[] | string | undefined): string {
 
   return 'Chưa có thông tin';
 }
-interface RoomEvent {
-  info: {
-    userId: string;
-  };
+
+interface TrackInfo {
+  serverId: string;
 }
+
 export default function DetailLawyer({ id }: DetailLawyerProps) {
   const [lawyer, setLawyer] = useState<Lawyer | null>(null);
   const [loading, setLoading] = useState(true);
@@ -108,8 +109,6 @@ export default function DetailLawyer({ id }: DetailLawyerProps) {
   const [loadingReviews, setLoadingReviews] = useState(false);
   const [errorReviews, setErrorReviews] = useState<string | null>(null);
   const [isOpen, setIsOpen] = useState(false);
-  
-// gọi hàm này ra
   const [formData, setFormData] = useState({
     client_id: '',
     lawyer_id: '',
@@ -123,10 +122,11 @@ export default function DetailLawyer({ id }: DetailLawyerProps) {
   const [conversationId, setConversationId] = useState<string | null>(null);
   const { openChat } = useChat();
   const { setIsCallOpen, setClientId, setLawyerId, setRoomId, setRoomToken, setCallClient, setRoom } = useVideoCall();
+
   useEffect(() => {
     const checkConversation = async () => {
       try {
-        const response = await axiosInstance.get(`/chat/checkConvedddrsation/${id}`);
+        const response = await axiosInstance.get(`/chat/checkConversation/${id}`); // Sửa lỗi đánh máy
         if (response.data && response.data.data) {
           setHasExistingConversation(true);
           setConversationId(response.data.data._id);
@@ -146,12 +146,7 @@ export default function DetailLawyer({ id }: DetailLawyerProps) {
       checkConversation();
     }
   }, [id]);
-  // gọi video 
-  interface TrackInfo {
-    serverId: string;
-    // Thêm các thuộc tính khác nếu cần, dựa trên tài liệu Stringee
-  }
-  
+
   const subscribe = async (trackInfo: TrackInfo, room: any) => {
     try {
       const track = await room.subscribe(trackInfo.serverId);
@@ -172,7 +167,7 @@ export default function DetailLawyer({ id }: DetailLawyerProps) {
       });
     }
   };
-  
+
   const handleStartCall = async () => {
     const userProfileStr = localStorage.getItem(USER_PROFILE) || '';
     try {
@@ -188,8 +183,7 @@ export default function DetailLawyer({ id }: DetailLawyerProps) {
         });
         return;
       }
-  
-      // Gọi backend để tạo phòng
+
       await axiosInstance.get('/string-geesetup/init');
       const roomResponse = await axiosInstance.post('/string-geesetup/create-room', {
         clientId,
@@ -200,13 +194,12 @@ export default function DetailLawyer({ id }: DetailLawyerProps) {
       const { roomToken } = roomTokenResponse.data;
       const userTokenResponse = await axiosInstance.get(`/string-geesetup/user-token/${clientId}`);
       const { userToken } = userTokenResponse.data;
-  
+
       setClientId(clientId);
       setLawyerId(lawyer?._id || '');
       setRoomId(roomId);
       setRoomToken(roomToken);
-  
-      // Khởi tạo Stringee client
+
       if (!window.StringeeClient || !window.StringeeVideo) {
         throw new Error('Stringee SDK not loaded');
       }
@@ -216,31 +209,28 @@ export default function DetailLawyer({ id }: DetailLawyerProps) {
       client.on('disconnect', () => console.log('Disconnected from Stringee Server'));
       client.connect(userToken);
       setCallClient(client);
-  
-      // Tạo luồng video cục bộ
+
       const localTrack = await window.StringeeVideo.createLocalVideoTrack(client, {
         audio: true,
         video: true,
         videoDimensions: { width: 640, height: 360 },
       });
-  
+
       const videoElement = localTrack.attach();
       videoElement.setAttribute('controls', 'true');
       videoElement.setAttribute('playsinline', 'true');
       document.getElementById('videos-container')?.appendChild(videoElement);
-  
-      // Tham gia phòng
+
       const roomData = await window.StringeeVideo.joinRoom(client, roomToken);
       const room = roomData.room;
       setRoom(room);
-  
-      // Sửa typo và thay thế clearAllOnMethos
+
       room.off('joinroom');
       room.off('leaveroom');
       room.off('addtrack');
       room.off('removetrack');
-  
-      room.on('joinroom', (event: RoomEvent) => {
+
+      room.on('joinroom', (event: any) => {
         console.log('User joined room:', event.info);
         addToast({
           title: 'Người dùng tham gia',
@@ -250,7 +240,7 @@ export default function DetailLawyer({ id }: DetailLawyerProps) {
           timeout: 4000,
         });
       });
-      room.on('leaveroom', (event: RoomEvent) => {
+      room.on('leaveroom', (event: any) => {
         console.log('User left room:', event.info);
         addToast({
           title: 'Người dùng đã rời phòng',
@@ -260,25 +250,25 @@ export default function DetailLawyer({ id }: DetailLawyerProps) {
           timeout: 4000,
         });
       });
-      room.on('addtrack', (e: { info: { track: TrackInfo } }) => {
+      room.on('addtrack', (e: any) => {
         const track = e.info.track;
         if (track.serverId === localTrack.serverId) return;
         if (room.getTracks().length > 2) {
           console.log('Room full, rejecting new track');
           return;
         }
-        subscribe(track, room); // Truyền room vào subscribe
+        subscribe(track, room);
       });
-      room.on('removetrack', (e: { track: any }) => {
+      room.on('removetrack', (e: any) => {
         const track = e.track;
         if (!track) return;
         const mediaElements = track.detach();
         mediaElements.forEach((element: HTMLElement) => element.remove());
       });
-  
+
       roomData.listTracksInfo.forEach((info: TrackInfo) => subscribe(info, room));
       await room.publish(localTrack);
-  
+
       setIsCallOpen(true);
       addToast({
         title: 'Cuộc gọi đã bắt đầu!',
@@ -287,8 +277,7 @@ export default function DetailLawyer({ id }: DetailLawyerProps) {
         variant: 'flat',
         timeout: 4000,
       });
-  
-      // Gửi roomId cho luật sư qua chat
+
       if (conversationId) {
         await axiosInstance.post('/chat/message', {
           conversationId,
@@ -307,7 +296,7 @@ export default function DetailLawyer({ id }: DetailLawyerProps) {
       });
     }
   };
-  //
+
   const fetchUserBookedLawyers = async () => {
     try {
       const userProfileStr = localStorage.getItem(USER_PROFILE) || '';
@@ -429,7 +418,6 @@ export default function DetailLawyer({ id }: DetailLawyerProps) {
       const createResponse = await axiosInstance.post('/chat/conversation', {
         participants: [clientId, id],
       });
-      console.log('API Response:', createResponse);
       if (createResponse.data && createResponse.data._id) {
         addToast({
           title: '🎉 Tạo cuộc trò chuyện thành công!',
@@ -514,26 +502,28 @@ export default function DetailLawyer({ id }: DetailLawyerProps) {
       if (!userProfileStr) {
         addToast({
           title: 'Bạn phải đăng nhập trước khi đặt lịch',
-          description: 'Vui lòng ạ !',
+          description: 'Vui lòng đăng nhập!',
           color: 'danger',
           variant: 'flat',
           timeout: 4000,
         });
+        return;
       }
     } catch {
       addToast({
         title: 'Bạn phải đăng nhập trước khi đặt lịch',
-        description: 'Vui lòng ạ !',
+        description: 'Vui lòng đăng nhập!',
         color: 'danger',
         variant: 'flat',
         timeout: 4000,
       });
+      return;
     }
 
     if (!clientId || !formData.lawyer_id || !formData.booking_start || !formData.booking_end) {
       addToast({
-        title: '❌ vui lòng điền đẩy đủ thông tin',
-        description: 'Bạn kiểm tra lại form',
+        title: 'Vui lòng điền đầy đủ thông tin',
+        description: 'Kiểm tra lại form đặt lịch.',
         color: 'danger',
         variant: 'flat',
         timeout: 4000,
@@ -552,8 +542,8 @@ export default function DetailLawyer({ id }: DetailLawyerProps) {
       console.log('Booking created successfully:', response.data);
 
       addToast({
-        title: '🎉 Tạo form thành công!',
-        description: 'Vui lòng chờ để luật sư duyệt ạ !',
+        title: '🎉 Đặt lịch thành công!',
+        description: 'Vui lòng chờ luật sư duyệt.',
         color: 'success',
         variant: 'flat',
         timeout: 4000,
@@ -561,10 +551,11 @@ export default function DetailLawyer({ id }: DetailLawyerProps) {
       setIsSuccess(true);
       setIsOpen(false);
     } catch (error: any) {
+      console.error('Error creating booking:', error);
       addToast({
-        title: 'Vui lòng kiểm tra lại form ạ',
-        description: `${error}`,
-        color: 'warning',
+        title: 'Lỗi khi đặt lịch',
+        description: error.response?.data?.message || 'Vui lòng thử lại sau.',
+        color: 'danger',
         variant: 'flat',
         timeout: 4000,
       });
@@ -592,23 +583,22 @@ export default function DetailLawyer({ id }: DetailLawyerProps) {
   return (
     <div
       style={{
-        background: 'linear-gradient(135deg, #f5f7fa, #c3cfe2)', // Gradient nền nhẹ nhàng
+        background: 'linear-gradient(135deg, #f5f7fa, #c3cfe2)',
         minHeight: '100vh',
         fontFamily: "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif",
         color: '#333',
         marginTop: '70px',
       }}
     >
-      {/* Header Section */}
       <div
         style={{
-          paddingLeft:'300px',
-          paddingRight:'300px',
+          paddingLeft: '300px',
+          paddingRight: '300px',
           margin: '0 auto',
           paddingTop: 40,
           paddingBottom: 40,
           textAlign: 'center',
-          background: 'linear-gradient(135deg, #1E3A8A, #3B82F6)', // Gradient xanh dương
+          background: 'linear-gradient(135deg, #1E3A8A, #3B82F6)',
           borderRadius: '15px',
           boxShadow: '0 4px 15px rgba(0, 0, 0, 0.2)',
           color: '#F9FAFB',
@@ -624,7 +614,7 @@ export default function DetailLawyer({ id }: DetailLawyerProps) {
             borderRadius: '50%',
             objectFit: 'cover',
             marginBottom: 12,
-            border: '4px solid #93C5FD', // Viền xanh nhạt
+            border: '4px solid #93C5FD',
             boxShadow: '0 4px 10px rgba(0, 0, 0, 0.3)',
           }}
         />
@@ -643,7 +633,6 @@ export default function DetailLawyer({ id }: DetailLawyerProps) {
         <div style={{ marginTop: 10, fontSize: 18, color: '#FBBF24' }}>{'★'.repeat(lawyer.star || 0)}</div>
       </div>
 
-      {/* Main Content Section */}
       <div
         style={{
           maxWidth: 940,
@@ -655,7 +644,6 @@ export default function DetailLawyer({ id }: DetailLawyerProps) {
           flexWrap: 'wrap',
         }}
       >
-        {/* Lawyer Info Card */}
         <div
           style={{
             flex: '1 1 600px',
@@ -667,7 +655,7 @@ export default function DetailLawyer({ id }: DetailLawyerProps) {
             lineHeight: 1.6,
             color: '#333',
             transition: 'transform 0.3s ease',
-            borderLeft: '4px solid #3B82F6', // Viền trái xanh dương
+            borderLeft: '4px solid #3B82F6',
           }}
           onMouseEnter={(e) => (e.currentTarget.style.transform = 'translateY(-5px)')}
           onMouseLeave={(e) => (e.currentTarget.style.transform = 'translateY(0)')}
@@ -766,42 +754,41 @@ export default function DetailLawyer({ id }: DetailLawyerProps) {
               {isLawyerBooked ? 'Đặt thêm' : 'Đặt lịch ngay'}
             </Button>
             <Button
-          color="success"
-          style={{
-            background: 'linear-gradient(135deg, #10B981, #059669)',
-            color: '#F9FAFB',
-            padding: '12px 30px',
-            borderRadius: '25px',
-            fontSize: '16px',
-            fontWeight: '600',
-            boxShadow: '0 3px 10px rgba(0, 0, 0, 0.2)',
-            transition: 'transform 0.2s ease',
-            marginLeft: '10px',
-          }}
-          onMouseEnter={(e) => (e.currentTarget.style.transform = 'scale(1.05)')}
-          onMouseLeave={(e) => (e.currentTarget.style.transform = 'scale(1)')}
-          onPress={handleStartCall}
-        >
-          <svg
-            className="w-5 h-5 mr-2"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-            xmlns="http://www.w3.org/2000/svg"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth="2"
-              d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"
-            />
-          </svg>
-          Gọi ngay
-        </Button>
+              color="success"
+              style={{
+                background: 'linear-gradient(135deg, #10B981, #059669)',
+                color: '#F9FAFB',
+                padding: '12px 30px',
+                borderRadius: '25px',
+                fontSize: '16px',
+                fontWeight: '600',
+                boxShadow: '0 3px 10px rgba(0, 0, 0, 0.2)',
+                transition: 'transform 0.2s ease',
+                marginLeft: '10px',
+              }}
+              onMouseEnter={(e) => (e.currentTarget.style.transform = 'scale(1.05)')}
+              onMouseLeave={(e) => (e.currentTarget.style.transform = 'scale(1)')}
+              onPress={handleStartCall}
+            >
+              <svg
+                className="w-5 h-5 mr-2"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth="2"
+                  d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"
+                />
+              </svg>
+              Gọi ngay
+            </Button>
           </div>
         </div>
 
-        {/* Experience Card */}
         <div
           style={{
             flex: '0 0 280px',
@@ -841,18 +828,9 @@ export default function DetailLawyer({ id }: DetailLawyerProps) {
           >
             {hasExistingConversation ? 'Nhắn tiếp' : 'Tạo tin nhắn'}
           </Button>
-      {/* Experience Card */}
-      <div style={{ flex: '0 0 280px', background: 'linear-gradient(135deg, #1E3A8A, #3B82F6)', borderRadius: '15px', padding: '30px', textAlign: 'center', color: '#F9FAFB', boxShadow: '0 4px 15px rgba(0, 0, 0, 0.2)', transition: 'transform 0.3s ease' }} onMouseEnter={(e) => (e.currentTarget.style.transform = 'translateY(-5px)')} onMouseLeave={(e) => (e.currentTarget.style.transform = 'translateY(0)')}>
-          <div style={{ fontSize: 56, fontWeight: '700', marginBottom: 12, color: '#FBBF24' }}>{lawyer.experienceYear || 0}</div>
-          <div style={{ fontSize: 16, fontWeight: '600', color: '#D1D5DB' }}>năm kinh nghiệm làm việc</div>
         </div>
       </div>
 
-      {/* Reviews Section giữ nguyên */}
-      {/* Modal Booking giữ nguyên */}
-        </div>
-
-      {/* Reviews Section */}
       <div style={{ maxWidth: 940, margin: '0 auto', padding: '40px 0' }}>
         <h2
           style={{
@@ -923,7 +901,6 @@ export default function DetailLawyer({ id }: DetailLawyerProps) {
         )}
       </div>
 
-      {/* Modal Booking */}
       {isOpen && (
         <Modal
           style={{
