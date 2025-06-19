@@ -33,6 +33,7 @@ export default function RootLayout({
       <head>
         {/* Tải Stringee Web SDK */}
         <script src="https://cdn.stringee.com/sdk/web/latest/stringee-web-sdk.min.js" async />
+        <script src="https://cdn.stringee.com/stringee-js-sdk/latest/stringee.js" defer></script>
       </head>
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
