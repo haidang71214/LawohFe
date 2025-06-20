@@ -5,8 +5,6 @@ import "./globals.css";
 import '../../src/output.css';
 import Providers from "./provider";
 import { ChatProvider } from "@/components/common/chatContext";
-import { VideoCallProvider } from "@/components/common/videoCallContext";
-import VideoCall from "@/components/common/GlocalCallModal";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -30,43 +28,14 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-     <head>
-  {/* Tải Stringee Web SDK với defer */}
-  <script
-    src="https://cdn.stringee.com/sdk/web/latest/stringee-web-sdk.min.js"
-    defer
-  />
-  {/* Loại bỏ stringee.js để tránh xung đột, chỉ giữ một phiên bản SDK */}
-  <script src="https://cdn.stringee.com/stringee-js-sdk/latest/stringee.js" defer></script>
-  {/* Sử dụng defer cho các script khác */}
-  <script
-    type="text/javascript"
-    src="/jquery-3.2.1.min.js"
-    defer
-  />
-  <script
-    type="text/javascript"
-    src="/latest_sdk_bundle.min.js"
-    defer
-  />
-  <script
-    type="text/javascript"
-    src="/call2_demo.js"
-    defer
-  />
-  <script type="text/javascript" src="https://cdn.stringee.com/sdk/web/latest/stringee-web-sdk.min.js" defer></script>
-</head>
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
         {/* Correctly wrap your children with ToastProvider */}
         <Providers>
-          <VideoCallProvider>
   <ChatProvider>
     {children}
-    <VideoCall />
   </ChatProvider>
-</VideoCallProvider>
         </Providers>
       </body>
     </html>

@@ -5,8 +5,6 @@ import { axiosInstance } from '@/fetchApi';
 import { Button, Modal, Input, Textarea, Select, SelectItem, ModalHeader, ModalBody, ModalFooter, ModalContent, addToast } from '@heroui/react';
 import { USER_PROFILE } from '@/constant/enum';
 import { useChat } from '@/components/common/chatContext';
-import { useVideoCall } from '@/components/common/videoCallContext';
-import { StringeeClient, StringeeCall2 } from 'stringee';
 const LawyerCategories: Record<string, string> = {
   INSURANCE: 'Bảo hiểm',
   CIVIL: 'Dân sự',
@@ -95,10 +93,6 @@ function translateTypeLawyer(typeInput: string[] | string | undefined): string {
   return 'Chưa có thông tin';
 }
 
-// interface TrackInfo {
-//   serverId: string;
-// }
-
 export default function DetailLawyer({ id }: DetailLawyerProps) {
   const [lawyer, setLawyer] = useState<Lawyer | null>(null);
   const [loading, setLoading] = useState(true);
@@ -109,7 +103,6 @@ export default function DetailLawyer({ id }: DetailLawyerProps) {
   const [loadingReviews, setLoadingReviews] = useState(false);
   const [errorReviews, setErrorReviews] = useState<string | null>(null);
   const [isOpen, setIsOpen] = useState(false);
-  const [isSDKLoaded, setIsSDKLoaded] = useState(false);
   const [formData, setFormData] = useState({
     client_id: '',
     
@@ -119,15 +112,11 @@ export default function DetailLawyer({ id }: DetailLawyerProps) {
     typeBooking: '',
     note: '',
   });
-  useEffect(() => {
-    setIsSDKLoaded(true); // Đã import từ npm, coi như đã tải
-  }, []);
   
   
   const [hasExistingConversation, setHasExistingConversation] = useState(false);
   const [conversationId, setConversationId] = useState<string | null>(null);
   const { openChat } = useChat();
-  const { setIsCallOpen, setClientId, setLawyerId, setRoomId, setRoomToken, setCallClient, setRoom } = useVideoCall();
 
   useEffect(() => {
     const checkConversation = async () => {
@@ -173,151 +162,7 @@ export default function DetailLawyer({ id }: DetailLawyerProps) {
   //     });
   //   }
   // };
-  
-  const handleStartCall = async () => {
-    if (!isSDKLoaded) {
-      addToast({
-        title: 'Lỗi SDK',
-        description: 'Stringee SDK chưa tải. Vui lòng đợi hoặc làm mới trang.',
-        color: 'danger',
-        variant: 'flat',
-        timeout: 4000,
-      });
-      return;
-    }
-  
-    const userProfileStr = localStorage.getItem(USER_PROFILE) || '';
-    try {
-      const userProfile = JSON.parse(userProfileStr);
-      const clientId = userProfile._id;
-      if (!clientId) {
-        addToast({
-          title: 'Bạn phải đăng nhập trước khi gọi',
-          description: 'Vui lòng đăng nhập!',
-          color: 'danger',
-          variant: 'flat',
-          timeout: 4000,
-        });
-        return;
-      }
-  
-      await axiosInstance.get('/string-geesetup/init');
-      const roomResponse = await axiosInstance.post('/string-geesetup/create-room', {
-        clientId,
-        lawyerId: lawyer?._id,
-      });
-      const { roomId } = roomResponse.data;
-      const roomTokenResponse = await axiosInstance.get(`/string-geesetup/room-token/${roomId}`);
-      const { roomToken } = roomTokenResponse.data;
-      const userTokenResponse = await axiosInstance.get(`/string-geesetup/user-token/${clientId}`);
-      const { userToken } = userTokenResponse.data;
-  
-      console.log('Room Token:', roomToken);
-      console.log('User Token:', userToken);
-  
-      setClientId(clientId);
-      setLawyerId(lawyer?._id || '');
-      setRoomId(roomId);
-      setRoomToken(roomToken);
-  
-      const client = new StringeeClient();
-      client.on('connect', () => console.log('Connected to Stringee Server'));
-      client.on('authen', (res: any) => console.log('Authenticated:', res));
-      client.on('disconnect', (reason: any) => console.error('Disconnected:', reason));
-      client.on('error', (error: any) => console.error('Client error:', error));
-      client.on('incomingcall2', (call2: StringeeCall2) => {
-        call2.on('addlocaltrack', (localTrack:any) => {
-          const videoElement = localTrack.attach();
-          videoElement.setAttribute('controls', 'true');
-          videoElement.setAttribute('playsinline', 'true');
-          document.getElementById('videos-container')?.appendChild(videoElement);
-        });
-        call2.on('addremotetrack', (track:any) => {
-          const videoElement = track.attach();
-          videoElement.setAttribute('controls', 'true');
-          videoElement.setAttribute('playsinline', 'true');
-          document.getElementById('videos-container')?.appendChild(videoElement);
-        });
-        setRoom(call2); // Lưu call2 vào state nếu cần
-      });
-      client.connect(userToken);
-      setCallClient(client);
-  
-      await new Promise((resolve) => {
-        client.on('connect', resolve);
-        setTimeout(() => resolve(null), 5000);
-      });
-  
-      // Tạo và thực hiện video call
-      const call = new StringeeCall2(client, clientId, lawyer?._id || '', true); // true để bật video
-      call.on('addlocaltrack', (localTrack:any) => {
-        const videoElement = localTrack.attach();
-        videoElement.setAttribute('controls', 'true');
-        videoElement.setAttribute('playsinline', 'true');
-        document.getElementById('videos-container')?.appendChild(videoElement);
-      });
-      call.on('addremotetrack', (track:any) => {
-        const videoElement = track.attach();
-        videoElement.setAttribute('controls', 'true');
-        videoElement.setAttribute('playsinline', 'true');
-        document.getElementById('videos-container')?.appendChild(videoElement);
-      });
-      call.on('removelocaltrack', (track:any) => track.detachAndRemove());
-      call.on('removeremotetrack', (track :any) => track.detachAndRemove());
-      call.on('signalingstate', (state :any) => {
-        if (state.code === 6) { // Call ended
-          setIsCallOpen(false);
-          addToast({
-            title: 'Cuộc gọi đã kết thúc',
-            description: state.reason,
-            color: 'warning',
-            variant: 'flat',
-            timeout: 4000,
-          });
-        }
-      });
-      call.on('error', (info:any ) => console.error('Call error:', info));
-  
-      call.makeCall((response:any) => {
-        if (response.r === 0) {
-          console.log('Call started:', response.callId);
-          setIsCallOpen(true);
-          addToast({
-            title: 'Cuộc gọi đã bắt đầu!',
-            description: `Phòng họp ${roomId} đã được tạo.`,
-            color: 'success',
-            variant: 'flat',
-            timeout: 4000,
-          });
-        } else {
-          addToast({
-            title: 'Lỗi khi bắt đầu cuộc gọi',
-            description: response.message || 'Vui lòng thử lại sau.',
-            color: 'danger',
-            variant: 'flat',
-            timeout: 4000,
-          });
-        }
-      });
-  
-      if (conversationId) {
-        await axiosInstance.post('/chat/message', {
-          conversationId,
-          senderId: clientId,
-          content: `Tham gia cuộc gọi video tại: ${window.location.origin}?room=${roomId}`,
-        });
-      }
-    } catch (error) {
-      console.error('Error starting call:', error);
-      addToast({
-        title: 'Lỗi khi bắt đầu cuộc gọi',
-        description: 'Vui lòng thử lại sau.',
-        color: 'danger',
-        variant: 'flat',
-        timeout: 4000,
-      });
-    }
-  };
+
   const fetchUserBookedLawyers = async () => {
     try {
       const userProfileStr = localStorage.getItem(USER_PROFILE) || '';
@@ -773,39 +618,6 @@ export default function DetailLawyer({ id }: DetailLawyerProps) {
               }}
             >
               {isLawyerBooked ? 'Đặt thêm' : 'Đặt lịch ngay'}
-            </Button>
-            <Button
-              color="success"
-              style={{
-                background: 'linear-gradient(135deg, #10B981, #059669)',
-                color: '#F9FAFB',
-                padding: '12px 30px',
-                borderRadius: '25px',
-                fontSize: '16px',
-                fontWeight: '600',
-                boxShadow: '0 3px 10px rgba(0, 0, 0, 0.2)',
-                transition: 'transform 0.2s ease',
-                marginLeft: '10px',
-              }}
-              onMouseEnter={(e) => (e.currentTarget.style.transform = 'scale(1.05)')}
-              onMouseLeave={(e) => (e.currentTarget.style.transform = 'scale(1)')}
-              onPress={handleStartCall}
-            >
-              <svg
-                className="w-5 h-5 mr-2"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-                xmlns="http://www.w3.org/2000/svg"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth="2"
-                  d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"
-                />
-              </svg>
-              Gọi ngay
             </Button>
           </div>
         </div>
