@@ -26,7 +26,8 @@ export default function LoginIndex() {
         email,
         password,
       });
-
+      console.log(response);
+      
       const { token } = response.data;
       localStorage.setItem(LOGIN_USER, token);
 

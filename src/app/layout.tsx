@@ -30,17 +30,37 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <head>
-        {/* Tải Stringee Web SDK */}
-        <script src="https://cdn.stringee.com/sdk/web/latest/stringee-web-sdk.min.js" async />
-        <script src="https://cdn.stringee.com/stringee-js-sdk/latest/stringee.js" defer></script>
-      </head>
+     <head>
+  {/* Tải Stringee Web SDK với defer */}
+  <script
+    src="https://cdn.stringee.com/sdk/web/latest/stringee-web-sdk.min.js"
+    defer
+  />
+  {/* Loại bỏ stringee.js để tránh xung đột, chỉ giữ một phiên bản SDK */}
+  <script src="https://cdn.stringee.com/stringee-js-sdk/latest/stringee.js" defer></script>
+  {/* Sử dụng defer cho các script khác */}
+  <script
+    type="text/javascript"
+    src="/jquery-3.2.1.min.js"
+    defer
+  />
+  <script
+    type="text/javascript"
+    src="/latest_sdk_bundle.min.js"
+    defer
+  />
+  <script
+    type="text/javascript"
+    src="/call2_demo.js"
+    defer
+  />
+  <script type="text/javascript" src="https://cdn.stringee.com/sdk/web/latest/stringee-web-sdk.min.js" defer></script>
+</head>
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
         {/* Correctly wrap your children with ToastProvider */}
         <Providers>
-          {/* gán video vô đây */}
           <VideoCallProvider>
   <ChatProvider>
     {children}

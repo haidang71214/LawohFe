@@ -6,7 +6,7 @@ import { Button, Modal, Input, Textarea, Select, SelectItem, ModalHeader, ModalB
 import { USER_PROFILE } from '@/constant/enum';
 import { useChat } from '@/components/common/chatContext';
 import { useVideoCall } from '@/components/common/videoCallContext';
-
+import { StringeeClient, StringeeCall2 } from 'stringee';
 const LawyerCategories: Record<string, string> = {
   INSURANCE: 'Bảo hiểm',
   CIVIL: 'Dân sự',
@@ -95,9 +95,9 @@ function translateTypeLawyer(typeInput: string[] | string | undefined): string {
   return 'Chưa có thông tin';
 }
 
-interface TrackInfo {
-  serverId: string;
-}
+// interface TrackInfo {
+//   serverId: string;
+// }
 
 export default function DetailLawyer({ id }: DetailLawyerProps) {
   const [lawyer, setLawyer] = useState<Lawyer | null>(null);
@@ -109,15 +109,21 @@ export default function DetailLawyer({ id }: DetailLawyerProps) {
   const [loadingReviews, setLoadingReviews] = useState(false);
   const [errorReviews, setErrorReviews] = useState<string | null>(null);
   const [isOpen, setIsOpen] = useState(false);
+  const [isSDKLoaded, setIsSDKLoaded] = useState(false);
   const [formData, setFormData] = useState({
     client_id: '',
+    
     lawyer_id: '',
     booking_start: '',
     booking_end: '',
     typeBooking: '',
     note: '',
   });
-
+  useEffect(() => {
+    setIsSDKLoaded(true); // Đã import từ npm, coi như đã tải
+  }, []);
+  
+  
   const [hasExistingConversation, setHasExistingConversation] = useState(false);
   const [conversationId, setConversationId] = useState<string | null>(null);
   const { openChat } = useChat();
@@ -147,28 +153,39 @@ export default function DetailLawyer({ id }: DetailLawyerProps) {
     }
   }, [id]);
 
-  const subscribe = async (trackInfo: TrackInfo, room: any) => {
-    try {
-      const track = await room.subscribe(trackInfo.serverId);
-      track.on('ready', () => {
-        const videoElement = track.attach();
-        videoElement.setAttribute('controls', 'true');
-        videoElement.setAttribute('playsinline', 'true');
-        document.getElementById('videos-container')?.appendChild(videoElement);
-      });
-    } catch (error) {
-      console.error('Error subscribing to track:', error);
+  // const subscribe = async (trackInfo: TrackInfo, room: any) => {
+  //   try {
+  //     const track = await room.subscribe(trackInfo.serverId);
+  //     track.on('ready', () => {
+  //       const videoElement = track.attach();
+  //       videoElement.setAttribute('controls', 'true');
+  //       videoElement.setAttribute('playsinline', 'true');
+  //       document.getElementById('videos-container')?.appendChild(videoElement);
+  //     });
+  //   } catch (error) {
+  //     console.error('Error subscribing to track:', error);
+  //     addToast({
+  //       title: 'Lỗi khi đăng ký track',
+  //       description: 'Vui lòng thử lại.',
+  //       color: 'danger',
+  //       variant: 'flat',
+  //       timeout: 4000,
+  //     });
+  //   }
+  // };
+  
+  const handleStartCall = async () => {
+    if (!isSDKLoaded) {
       addToast({
-        title: 'Lỗi khi đăng ký track',
-        description: 'Vui lòng thử lại.',
+        title: 'Lỗi SDK',
+        description: 'Stringee SDK chưa tải. Vui lòng đợi hoặc làm mới trang.',
         color: 'danger',
         variant: 'flat',
         timeout: 4000,
       });
+      return;
     }
-  };
-
-  const handleStartCall = async () => {
+  
     const userProfileStr = localStorage.getItem(USER_PROFILE) || '';
     try {
       const userProfile = JSON.parse(userProfileStr);
@@ -183,7 +200,7 @@ export default function DetailLawyer({ id }: DetailLawyerProps) {
         });
         return;
       }
-
+  
       await axiosInstance.get('/string-geesetup/init');
       const roomResponse = await axiosInstance.post('/string-geesetup/create-room', {
         clientId,
@@ -194,90 +211,95 @@ export default function DetailLawyer({ id }: DetailLawyerProps) {
       const { roomToken } = roomTokenResponse.data;
       const userTokenResponse = await axiosInstance.get(`/string-geesetup/user-token/${clientId}`);
       const { userToken } = userTokenResponse.data;
-
+  
+      console.log('Room Token:', roomToken);
+      console.log('User Token:', userToken);
+  
       setClientId(clientId);
       setLawyerId(lawyer?._id || '');
       setRoomId(roomId);
       setRoomToken(roomToken);
-
-      if (!window.StringeeClient || !window.StringeeVideo) {
-        throw new Error('Stringee SDK not loaded');
-      }
-      const client = new window.StringeeClient();
-      client.on('authen', (res: any) => console.log('Authenticated:', res));
+  
+      const client = new StringeeClient();
       client.on('connect', () => console.log('Connected to Stringee Server'));
-      client.on('disconnect', () => console.log('Disconnected from Stringee Server'));
+      client.on('authen', (res: any) => console.log('Authenticated:', res));
+      client.on('disconnect', (reason: any) => console.error('Disconnected:', reason));
+      client.on('error', (error: any) => console.error('Client error:', error));
+      client.on('incomingcall2', (call2: StringeeCall2) => {
+        call2.on('addlocaltrack', (localTrack:any) => {
+          const videoElement = localTrack.attach();
+          videoElement.setAttribute('controls', 'true');
+          videoElement.setAttribute('playsinline', 'true');
+          document.getElementById('videos-container')?.appendChild(videoElement);
+        });
+        call2.on('addremotetrack', (track:any) => {
+          const videoElement = track.attach();
+          videoElement.setAttribute('controls', 'true');
+          videoElement.setAttribute('playsinline', 'true');
+          document.getElementById('videos-container')?.appendChild(videoElement);
+        });
+        setRoom(call2); // Lưu call2 vào state nếu cần
+      });
       client.connect(userToken);
       setCallClient(client);
-
-      const localTrack = await window.StringeeVideo.createLocalVideoTrack(client, {
-        audio: true,
-        video: true,
-        videoDimensions: { width: 640, height: 360 },
+  
+      await new Promise((resolve) => {
+        client.on('connect', resolve);
+        setTimeout(() => resolve(null), 5000);
       });
-
-      const videoElement = localTrack.attach();
-      videoElement.setAttribute('controls', 'true');
-      videoElement.setAttribute('playsinline', 'true');
-      document.getElementById('videos-container')?.appendChild(videoElement);
-
-      const roomData = await window.StringeeVideo.joinRoom(client, roomToken);
-      const room = roomData.room;
-      setRoom(room);
-
-      room.off('joinroom');
-      room.off('leaveroom');
-      room.off('addtrack');
-      room.off('removetrack');
-
-      room.on('joinroom', (event: any) => {
-        console.log('User joined room:', event.info);
-        addToast({
-          title: 'Người dùng tham gia',
-          description: `User ${event.info.userId} đã tham gia.`,
-          color: 'success',
-          variant: 'flat',
-          timeout: 4000,
-        });
+  
+      // Tạo và thực hiện video call
+      const call = new StringeeCall2(client, clientId, lawyer?._id || '', true); // true để bật video
+      call.on('addlocaltrack', (localTrack:any) => {
+        const videoElement = localTrack.attach();
+        videoElement.setAttribute('controls', 'true');
+        videoElement.setAttribute('playsinline', 'true');
+        document.getElementById('videos-container')?.appendChild(videoElement);
       });
-      room.on('leaveroom', (event: any) => {
-        console.log('User left room:', event.info);
-        addToast({
-          title: 'Người dùng đã rời phòng',
-          description: `User ${event.info.userId} đã rời.`,
-          color: 'warning',
-          variant: 'flat',
-          timeout: 4000,
-        });
+      call.on('addremotetrack', (track:any) => {
+        const videoElement = track.attach();
+        videoElement.setAttribute('controls', 'true');
+        videoElement.setAttribute('playsinline', 'true');
+        document.getElementById('videos-container')?.appendChild(videoElement);
       });
-      room.on('addtrack', (e: any) => {
-        const track = e.info.track;
-        if (track.serverId === localTrack.serverId) return;
-        if (room.getTracks().length > 2) {
-          console.log('Room full, rejecting new track');
-          return;
+      call.on('removelocaltrack', (track:any) => track.detachAndRemove());
+      call.on('removeremotetrack', (track :any) => track.detachAndRemove());
+      call.on('signalingstate', (state :any) => {
+        if (state.code === 6) { // Call ended
+          setIsCallOpen(false);
+          addToast({
+            title: 'Cuộc gọi đã kết thúc',
+            description: state.reason,
+            color: 'warning',
+            variant: 'flat',
+            timeout: 4000,
+          });
         }
-        subscribe(track, room);
       });
-      room.on('removetrack', (e: any) => {
-        const track = e.track;
-        if (!track) return;
-        const mediaElements = track.detach();
-        mediaElements.forEach((element: HTMLElement) => element.remove());
+      call.on('error', (info:any ) => console.error('Call error:', info));
+  
+      call.makeCall((response:any) => {
+        if (response.r === 0) {
+          console.log('Call started:', response.callId);
+          setIsCallOpen(true);
+          addToast({
+            title: 'Cuộc gọi đã bắt đầu!',
+            description: `Phòng họp ${roomId} đã được tạo.`,
+            color: 'success',
+            variant: 'flat',
+            timeout: 4000,
+          });
+        } else {
+          addToast({
+            title: 'Lỗi khi bắt đầu cuộc gọi',
+            description: response.message || 'Vui lòng thử lại sau.',
+            color: 'danger',
+            variant: 'flat',
+            timeout: 4000,
+          });
+        }
       });
-
-      roomData.listTracksInfo.forEach((info: TrackInfo) => subscribe(info, room));
-      await room.publish(localTrack);
-
-      setIsCallOpen(true);
-      addToast({
-        title: 'Cuộc gọi đã bắt đầu!',
-        description: `Phòng họp ${roomId} đã được tạo.`,
-        color: 'success',
-        variant: 'flat',
-        timeout: 4000,
-      });
-
+  
       if (conversationId) {
         await axiosInstance.post('/chat/message', {
           conversationId,
@@ -296,7 +318,6 @@ export default function DetailLawyer({ id }: DetailLawyerProps) {
       });
     }
   };
-
   const fetchUserBookedLawyers = async () => {
     try {
       const userProfileStr = localStorage.getItem(USER_PROFILE) || '';

@@ -2,69 +2,27 @@
 
 import { axiosInstance, BASE_URL } from '@/fetchApi';
 import { addToast } from '@heroui/toast';
-import React, { createContext, useContext, useState, useEffect } from 'react';
-import { io, Socket } from 'socket.io-client';
-
-// Define interfaces for Stringee SDK types
-interface StringeeClient {
-  on: (event: string, callback: (res: any) => void) => void;
-  connect: (token: string) => void;
-  disconnect: () => void;
-}
-
-interface StringeeVideoTrack {
-  serverId: string;
-  attach: () => HTMLVideoElement;
-  detach: () => HTMLElement[];
-  on: (event: string, callback: () => void) => void;
-}
-
-interface StringeeRoom {
-  subscribe: (serverId: string) => Promise<StringeeVideoTrack>;
-  publish: (track: StringeeVideoTrack) => Promise<void>;
-  getTracks: () => StringeeVideoTrack[];
-  on: (event: string, callback: (e: any) => void) => void;
-  off: (event: string) => void;
-}
-
-// Define event interfaces
-interface RoomEvent {
-  info: {
-    userId: string;
-    [key: string]: any;
-  };
-}
-
-interface TrackEvent {
-  info: {
-    track: {
-      serverId: string;
-      [key: string]: any;
-    };
-  };
-}
-
-interface RemoveTrackEvent {
-  track: StringeeVideoTrack | null;
-}
+import React, { createContext, useContext, useState, useEffect, useMemo } from 'react';
+import { io } from 'socket.io-client';
+import { StringeeClient, StringeeCall2 } from 'stringee';
 
 interface VideoCallContextType {
   isCallOpen: boolean;
-  setIsCallOpen: (open: boolean) => void;
+  setIsCallOpen: (value: boolean) => void;
   clientId: string | null;
-  setClientId: (id: string | null) => void;
+  setClientId: (value: string | null) => void;
   lawyerId: string | null;
-  setLawyerId: (id: string | null) => void;
+  setLawyerId: (value: string | null) => void;
   roomId: string | null;
-  setRoomId: (id: string | null) => void;
+  setRoomId: (value: string | null) => void;
   roomToken: string | null;
-  setRoomToken: (token: string | null) => void;
+  setRoomToken: (value: string | null) => void;
   callClient: StringeeClient | null;
-  setCallClient: (client: StringeeClient | null) => void;
-  room: StringeeRoom | null;
-  setRoom: (room: StringeeRoom | null) => void;
+  setCallClient: (value: StringeeClient | null) => void;
+  room: StringeeCall2 | null; // Sử dụng StringeeCall2 thay vì StringeeRoom
+  setRoom: (value: StringeeCall2 | null) => void;
   incomingCall: { roomId: string; clientId: string; lawyerId: string } | null;
-  setIncomingCall: (call: { roomId: string; clientId: string; lawyerId: string } | null) => void;
+  setIncomingCall: (value: { roomId: string; clientId: string; lawyerId: string } | null) => void;
   joinCall: (roomId: string) => Promise<void>;
 }
 
@@ -77,10 +35,8 @@ export function VideoCallProvider({ children }: { children: React.ReactNode }) {
   const [roomId, setRoomId] = useState<string | null>(null);
   const [roomToken, setRoomToken] = useState<string | null>(null);
   const [callClient, setCallClient] = useState<StringeeClient | null>(null);
-  const [room, setRoom] = useState<StringeeRoom | null>(null);
+  const [room, setRoom] = useState<StringeeCall2 | null>(null); // Đổi sang StringeeCall2
   const [incomingCall, setIncomingCall] = useState<{ roomId: string; clientId: string; lawyerId: string } | null>(null);
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const [socket, setSocket] = useState<Socket | null>(null);
 
   useEffect(() => {
     const userProfileStr = localStorage.getItem('USER_PROFILE') || '';
@@ -103,7 +59,6 @@ export function VideoCallProvider({ children }: { children: React.ReactNode }) {
         const videosContainer = document.getElementById('videos-container');
         if (videosContainer) videosContainer.innerHTML = '';
       });
-      setSocket(socketInstance);
       return () => {
         socketInstance.disconnect();
       };
@@ -124,81 +79,62 @@ export function VideoCallProvider({ children }: { children: React.ReactNode }) {
       setRoomId(roomId);
       setRoomToken(roomToken);
 
-      const client = new window.StringeeClient();
+      const client = new StringeeClient(); // Sử dụng trực tiếp từ import
       client.on('authen', (res: any) => console.log('Authenticated:', res));
       client.on('connect', () => console.log('Connected to Stringee Server'));
       client.on('disconnect', () => console.log('Disconnected from Stringee Server'));
       client.connect(userToken);
       setCallClient(client);
 
-      const localTrack = await window.StringeeVideo.createLocalVideoTrack(client, {
-        audio: true,
-        video: true,
-        videoDimensions: { width: 640, height: 360 },
+      // Tạm thời loại bỏ logic StringeeRoom vì bạn đang dùng StringeeCall2
+      // Thay vào đó, tạo StringeeCall2 cho cuộc gọi 1-1
+      const call = new StringeeCall2(client, userId, lawyerId || '', true); // true để bật video
+      call.on('addlocaltrack', (localTrack: any) => {
+        const videoElement = localTrack.attach();
+        videoElement.setAttribute('controls', 'true');
+        videoElement.setAttribute('playsinline', 'true');
+        document.getElementById('videos-container')?.appendChild(videoElement);
       });
-
-      const videoElement = localTrack.attach();
-      videoElement.setAttribute('controls', 'true');
-      videoElement.setAttribute('playsinline', 'true');
-      document.getElementById('videos-container')?.appendChild(videoElement);
-
-      const roomData = await window.StringeeVideo.joinRoom(client, roomToken);
-      const newRoom = roomData.room;
-      setRoom(newRoom);
-
-      // Remove existing event listeners
-      newRoom.off('joinroom');
-      newRoom.off('leaveroom');
-      newRoom.off('addtrack');
-      newRoom.off('removetrack');
-
-      newRoom.on('joinroom', (event: RoomEvent) => {
-        console.log('User joined room:', event.info);
-        addToast({
-          title: 'Người dùng tham gia',
-          description: `User ${event.info.userId} đã tham gia.`,
-          color: 'success',
-          variant: 'flat',
-          timeout: 4000,
-        });
+      call.on('addremotetrack', (track: any) => {
+        const videoElement = track.attach();
+        videoElement.setAttribute('controls', 'true');
+        videoElement.setAttribute('playsinline', 'true');
+        document.getElementById('videos-container')?.appendChild(videoElement);
       });
-      newRoom.on('leaveroom', (event: RoomEvent) => {
-        console.log('User left room:', event.info);
-        addToast({
-          title: 'Người dùng đã rời phòng',
-          description: `User ${event.info.userId} đã rời.`,
-          color: 'warning',
-          variant: 'flat',
-          timeout: 4000,
-        });
-      });
-      newRoom.on('addtrack', (e: TrackEvent) => {
-        const track = e.info.track;
-        if (track.serverId === localTrack.serverId) return;
-        if (newRoom.getTracks().length > 2) {
-          console.log('Room full, rejecting new track');
-          return;
+      call.on('signalingstate', (state: any) => {
+        if (state.code === 6) {
+          setIsCallOpen(false);
+          addToast({
+            title: 'Cuộc gọi đã kết thúc',
+            description: state.reason,
+            color: 'warning',
+            variant: 'flat',
+            timeout: 4000,
+          });
         }
-        subscribe(track);
       });
-      newRoom.on('removetrack', (e: RemoveTrackEvent) => {
-        const track = e.track;
-        if (!track) return;
-        const mediaElements = track.detach();
-        mediaElements.forEach((element: HTMLElement) => element.remove());
+      call.makeCall((response: any) => {
+        if (response.r === 0) {
+          setRoom(call); // Lưu call vào state
+          setIsCallOpen(true);
+          addToast({
+            title: 'Tham gia cuộc gọi thành công!',
+            description: `Cuộc gọi ${roomId}.`,
+            color: 'success',
+            variant: 'flat',
+            timeout: 4000,
+          });
+        } else {
+          addToast({
+            title: 'Lỗi khi tham gia cuộc gọi',
+            description: response.message || 'Vui lòng thử lại.',
+            color: 'danger',
+            variant: 'flat',
+            timeout: 4000,
+          });
+        }
       });
 
-      roomData.listTracksInfo.forEach((info: { serverId: string }) => subscribe(info));
-      await newRoom.publish(localTrack);
-
-      setIsCallOpen(true);
-      addToast({
-        title: 'Tham gia cuộc gọi thành công!',
-        description: `Phòng họp ${roomId}.`,
-        color: 'success',
-        variant: 'flat',
-        timeout: 4000,
-      });
     } catch (error) {
       console.error('Error joining call:', error);
       addToast({
@@ -211,39 +147,28 @@ export function VideoCallProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  const subscribe = async (trackInfo: { serverId: string }) => {
-    if (!room) return;
-    const track = await room.subscribe(trackInfo.serverId);
-    track.on('ready', () => {
-      const videoElement = track.attach();
-      videoElement.setAttribute('controls', 'true');
-      videoElement.setAttribute('playsinline', 'true');
-      document.getElementById('videos-container')?.appendChild(videoElement);
-    });
-  };
+  const contextValue = useMemo(() => ({
+    isCallOpen,
+    setIsCallOpen,
+    clientId,
+    setClientId,
+    lawyerId,
+    setLawyerId,
+    roomId,
+    setRoomId,
+    roomToken,
+    setRoomToken,
+    callClient,
+    setCallClient,
+    room,
+    setRoom,
+    incomingCall,
+    setIncomingCall,
+    joinCall,
+  }), [isCallOpen, clientId, lawyerId, roomId, roomToken, callClient, room, incomingCall]);
 
   return (
-    <VideoCallContext.Provider
-      value={{
-        isCallOpen,
-        setIsCallOpen,
-        clientId,
-        setClientId,
-        lawyerId,
-        setLawyerId,
-        roomId,
-        setRoomId,
-        roomToken,
-        setRoomToken,
-        callClient,
-        setCallClient,
-        room,
-        setRoom,
-        incomingCall,
-        setIncomingCall,
-        joinCall,
-      }}
-    >
+    <VideoCallContext.Provider value={contextValue}>
       {children}
     </VideoCallContext.Provider>
   );
