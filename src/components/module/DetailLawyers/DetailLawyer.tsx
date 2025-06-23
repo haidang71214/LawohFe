@@ -6,10 +6,13 @@ import { Button, Modal, Input, Textarea, Select, SelectItem, ModalHeader, ModalB
 import { USER_PROFILE } from '@/constant/enum';
 import { useChat } from '@/components/common/chatContext';
 
-import { RoomUpdateResponse } from '@/app/test/[id]/page-comp';
 import { SocketContext } from '@/components/common/socketProvider';
 import { useVideoCall } from '@/components/common/videoProvider';
-
+interface RoomUpdateResponse{
+  roomId:string;
+   status: "waiting" | "started" | "rejected";
+   clients:string[]
+}
 const LawyerCategories: Record<string, string> = {
   INSURANCE: 'Bảo hiểm',
   CIVIL: 'Dân sự',
