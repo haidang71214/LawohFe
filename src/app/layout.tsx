@@ -5,6 +5,8 @@ import "./globals.css";
 import '../../src/output.css';
 import Providers from "./provider";
 import { ChatProvider } from "@/components/common/chatContext";
+import SocketProvider from "@/components/common/socketProvider";
+import VideoProvider from "@/components/common/videoProvider";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -28,13 +30,20 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
+      <head>
+      <script src="https://unpkg.com/peerjs@1.5.5/dist/peerjs.min.js" defer></script>
+      </head>
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
         {/* Correctly wrap your children with ToastProvider */}
         <Providers>
   <ChatProvider>
+    <SocketProvider>
+  <VideoProvider>
     {children}
+    </VideoProvider>
+    </SocketProvider>
   </ChatProvider>
         </Providers>
       </body>

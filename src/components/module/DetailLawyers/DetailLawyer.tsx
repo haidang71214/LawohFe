@@ -1,10 +1,15 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useContext, useEffect, useRef, useState } from 'react';
 import { axiosInstance } from '@/fetchApi';
 import { Button, Modal, Input, Textarea, Select, SelectItem, ModalHeader, ModalBody, ModalFooter, ModalContent, addToast } from '@heroui/react';
 import { USER_PROFILE } from '@/constant/enum';
 import { useChat } from '@/components/common/chatContext';
+
+import { RoomUpdateResponse } from '@/app/test/[id]/page-comp';
+import { SocketContext } from '@/components/common/socketProvider';
+import { useVideoCall } from '@/components/common/videoProvider';
+
 const LawyerCategories: Record<string, string> = {
   INSURANCE: 'Bảo hiểm',
   CIVIL: 'Dân sự',
@@ -105,23 +110,137 @@ export default function DetailLawyer({ id }: DetailLawyerProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [formData, setFormData] = useState({
     client_id: '',
-    
     lawyer_id: '',
     booking_start: '',
     booking_end: '',
     typeBooking: '',
     note: '',
   });
-  
-  
   const [hasExistingConversation, setHasExistingConversation] = useState(false);
   const [conversationId, setConversationId] = useState<string | null>(null);
   const { openChat } = useChat();
+  const dashboardSocket = useContext(SocketContext)
+
+  const { openVideoCall, handleReject, isCalling, isAccept, localStream, remoteStream, closeVideoCall } = useVideoCall();
+  const [isCallModalOpen, setIsCallModalOpen] = useState<boolean>(false);
+  const localVideoRef = useRef<HTMLVideoElement>(null);
+  const remoteVideoRef = useRef<HTMLVideoElement>(null);
+// gán stream vào đống này
+  useEffect(() => {
+    if (localVideoRef.current && localStream) {
+      localVideoRef.current.srcObject = localStream;
+    }
+    if (remoteVideoRef.current && remoteStream) {
+      remoteVideoRef.current.srcObject = remoteStream;
+    }
+  }, [localStream, remoteStream]);
+
+  useEffect(() => {
+    if (dashboardSocket) {
+      dashboardSocket.socket?.on('room-update', (res: RoomUpdateResponse) => {
+        console.log('Received room-update:', res);
+        const client = res.clients[1];
+        // trường hợp client khác id 
+        // trường hợp nhiều nhất nó về null
+        console.log(client,id);
+//aaaaaaaaa
+//đổi cái undefine lại thành số ha, mà rõ là cái room nó sẽ undefine khi reject rồi
+        if (client === undefined) {
+          if (res.status === 'waiting') {
+            setIsCallModalOpen(true); // Mở modal khi trạng thái là waiting
+          } else if (res.status === 'started') {
+            setIsCallModalOpen(true); // Giữ modal mở khi cuộc gọi bắt đầu
+            addToast({
+              title: 'Cuộc gọi đã bắt đầu!',
+              description: 'Kết nối với luật sư thành công.',
+              color: 'success',
+              variant: 'flat',
+              timeout: 4000,
+            });
+          } else if (res.status === 'rejected') {
+            setIsCallModalOpen(false); // Đóng modal khi bị từ chối
+            addToast({
+              title: 'Cuộc gọi bị từ chối',
+              description: 'Luật sư đã từ chối cuộc gọi.',
+              color: 'danger',
+              variant: 'flat',
+              timeout: 4000,
+            });
+          }
+        }else{
+          console.log('shit');
+          if (res.status === 'started') {
+            setIsCallModalOpen(true); // Giữ modal mở khi cuộc gọi bắt đầu
+            addToast({
+              title: 'Cuộc gọi đã bắt đầu!',
+              description: 'Kết nối với luật sư thành công.',
+              color: 'success',
+              variant: 'flat',
+              timeout: 4000,
+            });
+        }
+      }
+      });
+// trường hợp thứ 2, khi accept thì cái chỗ đó nó có dữ kiện rồi
+      return () => {
+        dashboardSocket.socket?.off('room-update');
+      };
+    }
+    // khi thay đổi cái này thì nó tự reload -> cập nhật lại á
+  }, [dashboardSocket, id]);
+
+  const handleCallVideo = () => {
+    const userProfileStr = localStorage.getItem(USER_PROFILE) || '';
+    let clientId = '';
+  
+    try {
+      const userProfile = JSON.parse(userProfileStr) as { _id?: string };
+      clientId = userProfile._id || '';
+      if (!userProfileStr || !clientId) {
+        addToast({
+          title: 'Bạn phải đăng nhập trước khi gọi',
+          description: 'Vui lòng đăng nhập!',
+          color: 'danger',
+          variant: 'flat',
+          timeout: 4000,
+        });
+        return;
+      }
+    } catch {
+      addToast({
+        title: 'Bạn phải đăng nhập trước khi gọi',
+        description: 'Vui lòng đăng nhập!',
+        color: 'danger',
+        variant: 'flat',
+        timeout: 4000,
+      });
+      return;
+    }
+  
+    // Gọi video với callerId là clientId, calleeId là id của luật sư
+    // openVideoCall(clientId, id);
+    //aaaaaaaaaaaaaaaaaaaaaaa
+    openVideoCall('1', '2');
+    setIsCallModalOpen(true); // Mở modal khi bắt đầu gọi
+  };
+
+
+  const cancelCall = () => {
+  handleReject(); // Gọi reject từ hook
+  setIsCallModalOpen(false);
+  addToast({
+    title: 'Đã hủy cuộc gọi',
+    description: 'Cuộc gọi đã được hủy thành công.',
+    color: 'warning',
+    variant: 'flat',
+    timeout: 4000,
+  });
+};
 
   useEffect(() => {
     const checkConversation = async () => {
       try {
-        const response = await axiosInstance.get(`/chat/checkConversation/${id}`); // Sửa lỗi đánh máy
+        const response = await axiosInstance.get(`/chat/checkConvedddrsation/${id}`); // Sửa lỗi đánh máy
         if (response.data && response.data.data) {
           setHasExistingConversation(true);
           setConversationId(response.data.data._id);
@@ -141,27 +260,6 @@ export default function DetailLawyer({ id }: DetailLawyerProps) {
       checkConversation();
     }
   }, [id]);
-
-  // const subscribe = async (trackInfo: TrackInfo, room: any) => {
-  //   try {
-  //     const track = await room.subscribe(trackInfo.serverId);
-  //     track.on('ready', () => {
-  //       const videoElement = track.attach();
-  //       videoElement.setAttribute('controls', 'true');
-  //       videoElement.setAttribute('playsinline', 'true');
-  //       document.getElementById('videos-container')?.appendChild(videoElement);
-  //     });
-  //   } catch (error) {
-  //     console.error('Error subscribing to track:', error);
-  //     addToast({
-  //       title: 'Lỗi khi đăng ký track',
-  //       description: 'Vui lòng thử lại.',
-  //       color: 'danger',
-  //       variant: 'flat',
-  //       timeout: 4000,
-  //     });
-  //   }
-  // };
 
   const fetchUserBookedLawyers = async () => {
     try {
@@ -370,7 +468,7 @@ export default function DetailLawyer({ id }: DetailLawyerProps) {
           title: 'Bạn phải đăng nhập trước khi đặt lịch',
           description: 'Vui lòng đăng nhập!',
           color: 'danger',
-          variant: 'flat',
+          variant: 'flat',                              
           timeout: 4000,
         });
         return;
@@ -661,6 +759,9 @@ export default function DetailLawyer({ id }: DetailLawyerProps) {
           >
             {hasExistingConversation ? 'Nhắn tiếp' : 'Tạo tin nhắn'}
           </Button>
+         <Button color="primary" style={{ marginTop: '20px' }} onPress={() =>handleCallVideo()}>
+          Gọi cho luật sư
+          </Button>
         </div>
       </div>
 
@@ -865,6 +966,60 @@ export default function DetailLawyer({ id }: DetailLawyerProps) {
                   Đặt lịch ngay
                 </Button>
               )}
+            </ModalFooter>
+          </ModalContent>
+        </Modal>
+      )}
+      {isCallModalOpen && (
+        <Modal
+          style={{
+            background: "linear-gradient(135deg, #f5f7fa, #c3cfe2)",
+            borderRadius: "15px",
+            boxShadow: "0 5px 20px rgba(0, 0, 0, 0.3)",
+          }}
+          isOpen={isCallModalOpen}
+          onOpenChange={() => {
+            closeVideoCall();
+            setIsCallModalOpen(false);
+          }}
+          placement="center"
+        >
+          <ModalContent>
+            <ModalHeader style={{ fontSize: "20px", color: "#1E3A8A", fontWeight: "700" }}>
+              Cuộc gọi video
+            </ModalHeader>
+            <ModalBody>
+              <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+                <video
+                  ref={localVideoRef}
+                  autoPlay
+                  muted
+                  style={{ width: "100%", height: "200px", borderRadius: "10px", background: "#000" }}
+                />
+                <video
+                  ref={remoteVideoRef}
+                  autoPlay
+                  style={{ width: "100%", height: "200px", borderRadius: "10px", background: "#000" }}
+                />
+                <p style={{ fontSize: "16px", color: "#333", textAlign: "center" }}>
+                  {isCalling ? "Đang gọi..." : isAccept ? "Đang kết nối..." : "Cuộc gọi đã kết thúc."}
+                </p>
+              </div>
+            </ModalBody>
+            <ModalFooter>
+              <Button
+                color="danger"
+                variant="flat"
+                onClick={cancelCall}
+                style={{
+                  background: "linear-gradient(135deg, #EF4444, #DC2626)",
+                  color: "#F9FAFB",
+                  padding: "8px 20px",
+                  borderRadius: "20px",
+                }}
+              >
+                Hủy cuộc gọi
+              </Button>
             </ModalFooter>
           </ModalContent>
         </Modal>

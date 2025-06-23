@@ -37,6 +37,7 @@ export default function UserChatLawyer({ id, onClose }: UserChatLawyerProps) {
   const offsetRef = useRef({ x: 0, y: 0 });
 
   useEffect(() => {
+    // là mình không cần kết nối tay, nó tự vô cho mình à ?
     console.log('Conversation ID:', id);
     const userProfileRaw = localStorage.getItem(USER_PROFILE);
     if (!userProfileRaw) {
@@ -58,7 +59,6 @@ export default function UserChatLawyer({ id, onClose }: UserChatLawyerProps) {
         transports: ['websocket', 'polling'],
       });
       setSocket(newSocket);
-
       newSocket.emit('joinRoom', id);
       console.log(`Joined room: ${id}`);
 
@@ -98,7 +98,7 @@ export default function UserChatLawyer({ id, onClose }: UserChatLawyerProps) {
           return [...prev, transformedMessage];
         });
       });
-
+// nhớ hủy disconnect, chuyển disconnect về khi nó out khỏi web
       return () => {
         newSocket.disconnect();
       };
