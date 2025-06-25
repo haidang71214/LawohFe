@@ -5,6 +5,7 @@ import { Button, Modal, ModalHeader, ModalBody, ModalFooter, ModalContent, addTo
 import { SocketContext } from "@/components/common/socketProvider";
 import { useVideoCall } from "@/components/common/videoProvider";
 import { PhoneOff, Video, X, Check } from "lucide-react";
+import { USER_PROFILE } from "@/constant/enum";
 // import { USER_PROFILE } from "@/constant/enum";
 // giờ úm ba la ra provider để nó hiện modal mỗi khi click thôi
 
@@ -23,15 +24,15 @@ export default function UserHai() {
   const [callerId, setCallerId] = useState<string>("");
   // handle accept có set cái isAccept không ?
   // Lấy clientId từ localStorage
-  // const getClientId = () => {
-  //   const userProfileStr = localStorage.getItem(USER_PROFILE) || "";
-  //   try {
-  //     const userProfile = JSON.parse(userProfileStr) as { _id?: string };
-  //     return userProfile._id || "";
-  //   } catch {
-  //     return "";
-  //   }
-  // };    
+  const getClientId = () => {
+    const userProfileStr = localStorage.getItem(USER_PROFILE) || "";
+    try {
+      const userProfile = JSON.parse(userProfileStr) as { _id?: string };
+      return userProfile._id || "";
+    } catch {
+      return "";
+    }
+  };    
 
   // Gán stream video
   useEffect(() => {
@@ -64,7 +65,7 @@ useEffect(() => {
       console.log("Received room-update in UserHai:", res);
       
       // Chỉ xử lý nếu client là callee (clientId là người nhận cuộc gọi)
-      if (res.clients[1] === '2' && res.status === "waiting") {
+      if (res.clients[1] === '68512260d40e59a325660b1c' && res.status === "waiting") {
         setCallerId(res.clients[0]); // Lưu callerId
         setIsCallModalOpen(true); // Mở modal cho cuộc gọi đến
         addToast({
@@ -102,7 +103,7 @@ useEffect(() => {
   }, [socket]);
 
   const handleCallAccept = () => {
-    const clientId = '1';
+    const clientId = getClientId();
     if (!clientId) {
       addToast({
         title: "Lỗi",

@@ -137,8 +137,13 @@ export default function DetailLawyer({ id }: DetailLawyerProps) {
     if (remoteVideoRef.current && remoteStream) {
       remoteVideoRef.current.srcObject = remoteStream;
     }
-  }, [localStream, remoteStream]);
-
+  }, [localStream, remoteStream]); 
+  const handleHehe = ()=>{
+    const userProfileStr = localStorage.getItem(USER_PROFILE) || '';
+      const userProfile = JSON.parse(userProfileStr) as { _id?: string };
+      const clientId = userProfile._id || '';
+      return clientId
+  }
   useEffect(() => {
     if (dashboardSocket) {
       dashboardSocket.socket?.on('room-update', (res: RoomUpdateResponse) => {
@@ -148,8 +153,9 @@ export default function DetailLawyer({ id }: DetailLawyerProps) {
         // trường hợp nhiều nhất nó về null
         console.log(client,id);
 //aaaaaaaaa
-//đổi cái undefine lại thành số ha, mà rõ là cái room nó sẽ undefine khi reject rồi
-        if (client === undefined) {
+        if (client === handleHehe()) {
+          console.log('aaaaaaaaaaaaaaaaaaaaaaaaa');
+          
           if (res.status === 'waiting') {
             setIsCallModalOpen(true); // Mở modal khi trạng thái là waiting
           } else if (res.status === 'started') {
@@ -220,11 +226,8 @@ export default function DetailLawyer({ id }: DetailLawyerProps) {
       });
       return;
     }
-  
-    // Gọi video với callerId là clientId, calleeId là id của luật sư
-    // openVideoCall(clientId, id);
     //aaaaaaaaaaaaaaaaaaaaaaa
-    openVideoCall('1', '2');
+    openVideoCall( clientId, id);
     setIsCallModalOpen(true); // Mở modal khi bắt đầu gọi
   };
 
