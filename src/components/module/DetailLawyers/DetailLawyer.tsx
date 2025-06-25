@@ -8,6 +8,7 @@ import { useChat } from '@/components/common/chatContext';
 
 import { SocketContext } from '@/components/common/socketProvider';
 import { useVideoCall } from '@/components/common/videoProvider';
+import { PhoneOff, Video, X } from 'lucide-react';
 interface RoomUpdateResponse{
   roomId:string;
    status: "waiting" | "started" | "rejected";
@@ -142,7 +143,7 @@ export default function DetailLawyer({ id }: DetailLawyerProps) {
     if (dashboardSocket) {
       dashboardSocket.socket?.on('room-update', (res: RoomUpdateResponse) => {
         console.log('Received room-update:', res);
-        const client = res.clients[1];
+        const client = res.clients[0];
         // trường hợp client khác id 
         // trường hợp nhiều nhất nó về null
         console.log(client,id);
@@ -973,60 +974,202 @@ export default function DetailLawyer({ id }: DetailLawyerProps) {
           </ModalContent>
         </Modal>
       )}
+{/* aaaaaaaaaaaaaaaaaaaaaaaaaaaaa */}
       {isCallModalOpen && (
-        <Modal
+  <Modal
+    style={{
+      background: 'linear-gradient(135deg, #f5f7fa, #e2e8f0)',
+      borderRadius: '20px',
+      boxShadow: '0 8px 30px rgba(0, 0, 0, 0.2)',
+      overflow: 'hidden',
+      maxWidth: '800px',
+      width: '90%',
+      animation: 'fadeIn 0.3s ease-in-out',
+    }}
+    isOpen={isCallModalOpen}
+    onOpenChange={() => {
+      closeVideoCall();
+      setIsCallModalOpen(false);
+    }}
+    placement="center"
+  >
+    <ModalContent>
+      <ModalHeader
+        style={{
+          padding: '16px 24px',
+          background: 'linear-gradient(135deg, #ffffff, #f1f5f9)',
+          borderBottom: '1px solid #e5e7eb',
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+        }}
+      >
+        <span
           style={{
-            background: "linear-gradient(135deg, #f5f7fa, #c3cfe2)",
-            borderRadius: "15px",
-            boxShadow: "0 5px 20px rgba(0, 0, 0, 0.3)",
+            fontSize: '24px',
+            fontWeight: '700',
+            color: '#1e3a8a',
+            letterSpacing: '0.5px',
           }}
-          isOpen={isCallModalOpen}
-          onOpenChange={() => {
+        >
+          Cuộc gọi video
+        </span>
+        <Button
+          variant="ghost"
+          size="lg"
+          onClick={() => {
             closeVideoCall();
             setIsCallModalOpen(false);
           }}
-          placement="center"
+          style={{
+            padding: '8px',
+            borderRadius: '50%',
+            background: 'transparent',
+            transition: 'background 0.2s ease',
+          }}
+          onMouseEnter={(e) => (e.currentTarget.style.background = '#e5e7eb')}
+          onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
         >
-          <ModalContent>
-            <ModalHeader style={{ fontSize: "20px", color: "#1E3A8A", fontWeight: "700" }}>
-              Cuộc gọi video
-            </ModalHeader>
-            <ModalBody>
-              <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
-                <video
-                  ref={localVideoRef}
-                  autoPlay
-                  muted
-                  style={{ width: "100%", height: "200px", borderRadius: "10px", background: "#000" }}
-                />
-                <video
-                  ref={remoteVideoRef}
-                  autoPlay
-                  style={{ width: "100%", height: "200px", borderRadius: "10px", background: "#000" }}
-                />
-                <p style={{ fontSize: "16px", color: "#333", textAlign: "center" }}>
-                  {isCalling ? "Đang gọi..." : isAccept ? "Đang kết nối..." : "Cuộc gọi đã kết thúc."}
-                </p>
-              </div>
-            </ModalBody>
-            <ModalFooter>
-              <Button
-                color="danger"
-                variant="flat"
-                onClick={cancelCall}
+          <X size={20} color="#6b7280" />
+        </Button>
+      </ModalHeader>
+      <ModalBody
+        style={{
+          padding: '24px',
+          background: 'linear-gradient(135deg, #f8fafc, #e2e8f0)',
+        }}
+      >
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+          {/* Remote Video - Main */}
+          <div
+            style={{
+              position: 'relative',
+              background: '#000',
+              borderRadius: '12px',
+              overflow: 'hidden',
+              boxShadow: '0 4px 15px rgba(0, 0, 0, 0.3)',
+              height: '300px',
+            }}
+          >
+            <video
+              ref={remoteVideoRef}
+              autoPlay
+              style={{
+                width: '100%',
+                height: '100%',
+                objectFit: 'cover',
+                borderRadius: '12px',
+              }}
+            />
+            {!isAccept && (
+              <div
                 style={{
-                  background: "linear-gradient(135deg, #EF4444, #DC2626)",
-                  color: "#F9FAFB",
-                  padding: "8px 20px",
-                  borderRadius: "20px",
+                  position: 'absolute',
+                  inset: 0,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  background: 'linear-gradient(135deg, #1e3a8a, #3b82f6)',
+                  color: '#ffffff',
+                  flexDirection: 'column',
+                  gap: '12px',
                 }}
               >
-                Hủy cuộc gọi
-              </Button>
-            </ModalFooter>
-          </ModalContent>
-        </Modal>
-      )}
+                <div
+                  style={{
+                    width: '64px',
+                    height: '64px',
+                    background: '#ffffff33',
+                    borderRadius: '50%',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                  }}
+                >
+                  <Video size={32} color="#ffffff" />
+                </div>
+                <span style={{ fontSize: '16px', fontWeight: '500' }}>
+                  {lawyer?.name || 'Luật sư'}
+                </span>
+              </div>
+            )}
+          </div>
+
+          {/* Local Video - Picture-in-Picture */}
+          <div
+            style={{
+              position: 'absolute',
+              top: '32px',
+              right: '32px',
+              width: '160px',
+              height: '120px',
+              background: '#000',
+              borderRadius: '8px',
+              overflow: 'hidden',
+              boxShadow: '0 2px 10px rgba(0, 0, 0, 0.2)',
+              border: '2px solid #ffffff',
+              zIndex: 10,
+            }}
+          >
+            <video
+              ref={localVideoRef}
+              autoPlay
+              muted
+              style={{
+                width: '100%',
+                height: '100%',
+                objectFit: 'cover',
+              }}
+            />
+          </div>
+
+          {/* Status */}
+          <div
+            style={{
+              textAlign: 'center',
+              padding: '12px 0',
+              fontSize: '16px',
+              fontWeight: '500',
+              color: isCalling ? '#f59e0b' : isAccept ? '#16a34a' : '#6b7280',
+              transition: 'color 0.3s ease',
+            }}
+          >
+            {isCalling ? 'Đang gọi...' : isAccept ? 'Đang kết nối...' : 'Cuộc gọi đã kết thúc.'}
+          </div>
+        </div>
+      </ModalBody>
+      <ModalFooter
+        style={{
+          padding: '16px 24px',
+          background: '#ffffff',
+          borderTop: '1px solid #e5e7eb',
+          display: 'flex',
+          justifyContent: 'center',
+          gap: '16px',
+        }}
+      >
+        <Button
+          color="danger"
+          variant="flat"
+          onClick={cancelCall}
+          style={{
+            background: 'linear-gradient(135deg, #ef4444, #dc2626)',
+            color: '#f9fafb',
+            padding: '10px 24px',
+            borderRadius: '20px',
+            fontWeight: '600',
+            transition: 'transform 0.2s ease, background 0.3s ease',
+          }}
+          onMouseEnter={(e) => (e.currentTarget.style.transform = 'scale(1.05)')}
+          onMouseLeave={(e) => (e.currentTarget.style.transform = 'scale(1)')}
+        >
+          <PhoneOff size={20} style={{ marginRight: '8px' }} />
+          Hủy cuộc gọi
+        </Button>
+      </ModalFooter>
+    </ModalContent>
+  </Modal>
+)}
     </div>
   );
 }

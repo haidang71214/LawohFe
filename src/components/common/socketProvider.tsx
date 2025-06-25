@@ -23,9 +23,7 @@ export default function SocketProvider({
   const [peer, setPeer] = useState<Peer>();
   const [peerId, setPeerId] = useState<string>();
   const [joined, setJoined] = useState<boolean>(false);
-
   useEffect(() => {
-    // Khởi tạo Socket.IO
     const newSocket = io(BASE_URL, {
       transports: ["websocket", "polling"],
     });
@@ -38,20 +36,19 @@ export default function SocketProvider({
     newSocket.on("connect_error", (error) => {
       console.error("SocketProvider connection error:", error);
     });
-
-    // Khởi tạo PeerJS
     const newPeer = new Peer({
-      host: BASE_URL, // Hoặc server PeerJS của bạn
+      host: '0.peerjs.com', // You can replace this with your own PeerJS server
       port: 443,
+      path: '/',
+      // secure: true,
     });
+
 
     // Lắng nghe sự kiện khi PeerJS mở và nhận Peer ID
     newPeer.on("open", (id) => {
       console.log("PeerJS opened with ID:", id);
       setPeer(newPeer);
       setPeerId(id);
-      // Gửi Peer ID lên server Socket.IO để lưu trữ (nếu cần)
-      newSocket.emit("register-peer-id", id);
     });
 
     newPeer.on("error", (err) => {
