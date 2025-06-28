@@ -114,8 +114,25 @@ export default function VideoProvider({ children }: { children: React.ReactNode 
           setRemoteStream(null);
           setIsAccept(false);
         });
-      } else {
-        console.error("No localStream or peer available");
+      }else if (!localStream) {
+        try {
+          const stream = await getMediaStream();
+          setLocalStream(stream);
+          console.log("Local stream set in handleReceivePeerId:", stream);
+        } catch (error) {
+          console.error("Error accessing media devices in handleReceivePeerId:", error);
+          addToast({
+            title: "Lỗi truy cập thiết bị",
+            description: "Vui lòng cấp quyền sử dụng webcam và micro.",
+            color: "danger",
+            variant: "flat",
+            timeout: 4000,
+          });
+          return;
+        }
+      }
+       else {
+        console.error("No localStream or peer available",localStream, peer);
         addToast({
           title: "Lỗi kết nối",
           description: "Không thể thiết lập cuộc gọi do thiếu stream hoặc peer.",
@@ -265,19 +282,22 @@ export default function VideoProvider({ children }: { children: React.ReactNode 
 
     try {
       if (!localStream) {
+        
         const stream = await navigator.mediaDevices.getUserMedia({
           video: true,
           audio: true,
         });
+        stream.getTracks()
+      .forEach(track => track.stop())
         setLocalStream(stream);
         console.log("Local stream set in handleAccept:", stream);
       }
 
-      socket.emit("join-video-room", roomId, clientId, "2");
+      socket.emit("join-video-room", roomId, clientId);
       console.log("Emitted join-video-room:", { roomId, clientId, callerId: "2" });
 
       // Gửi peerId của callee
-      socket.emit("send-peer-id", { roomId, peerId, recipientId: "2" });
+      socket.emit("send-peer-id", { roomId, peerId});
       console.log("Emitted send-peer-id:", { roomId, peerId, recipientId: "2" });
 
       setIsAccept(true);

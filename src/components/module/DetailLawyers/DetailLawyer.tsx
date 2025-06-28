@@ -9,7 +9,7 @@ import { useChat } from '@/components/common/chatContext';
 import { SocketContext } from '@/components/common/socketProvider';
 import { useVideoCall } from '@/components/common/videoProvider';
 import { PhoneOff, Video, X } from 'lucide-react';
-interface RoomUpdateResponse{
+export  interface RoomUpdateResponse{
   roomId:string;
    status: "waiting" | "started" | "rejected";
    clients:string[]
@@ -137,7 +137,10 @@ export default function DetailLawyer({ id }: DetailLawyerProps) {
     if (remoteVideoRef.current && remoteStream) {
       remoteVideoRef.current.srcObject = remoteStream;
     }
+    console.log('vcl : ',remoteStream,localStream);
+    
   }, [localStream, remoteStream]); 
+
   const handleHehe = ()=>{
     const userProfileStr = localStorage.getItem(USER_PROFILE) || '';
       const userProfile = JSON.parse(userProfileStr) as { _id?: string };

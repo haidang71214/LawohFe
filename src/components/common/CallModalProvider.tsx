@@ -1,42 +1,27 @@
-"use client";
+'use client'
 import React, { useContext, useEffect, useRef, useState } from "react";
-import {
-  Button,
-  Modal,
-  ModalHeader,
-  ModalBody,
-  ModalFooter,
-  ModalContent,
-  addToast,
-} from "@heroui/react";
+import { Button, Modal, ModalHeader, ModalBody, ModalFooter, ModalContent, addToast } from "@heroui/react";
 import { SocketContext } from "@/components/common/socketProvider";
 import { useVideoCall } from "@/components/common/videoProvider";
 import { PhoneOff, Video, X, Check } from "lucide-react";
 import { USER_PROFILE } from "@/constant/enum";
+// import { USER_PROFILE } from "@/constant/enum";
+// giờ úm ba la ra provider để nó hiện modal mỗi khi click thôi
 
 interface RoomUpdateResponse {
   roomId: string;
   status: "waiting" | "started" | "rejected";
   clients: string[];
 }
-
-export default function UserHai() {
+export default function UserHai({ children }: { children: React.ReactNode }) {
   const { socket } = useContext(SocketContext);
-  const {
-    handleAccept,
-    handleReject,
-    isCalling,
-    isAccept,
-    localStream,
-    remoteStream,
-    closeVideoCall,
-  } = useVideoCall();
-
-  const [isCallModalOpen, setIsCallModalOpen] = useState(false);
-  const [callerId, setCallerId] = useState("");
+  const { handleAccept, handleReject, isCalling, isAccept, localStream, remoteStream, closeVideoCall } = useVideoCall();
+  const [isCallModalOpen, setIsCallModalOpen] = useState<boolean>(false);
   const localVideoRef = useRef<HTMLVideoElement>(null);
   const remoteVideoRef = useRef<HTMLVideoElement>(null);
-
+  const [callerId, setCallerId] = useState<string>("");
+  // handle accept có set cái isAccept không ?
+  // Lấy clientId từ localStorage
   const getClientId = () => {
     const userProfileStr = localStorage.getItem(USER_PROFILE) || "";
     try {
@@ -45,26 +30,37 @@ export default function UserHai() {
     } catch {
       return "";
     }
-  };
+  };    
 
+  // Gán stream video
   useEffect(() => {
     if (localVideoRef.current && localStream) {
       localVideoRef.current.srcObject = localStream;
     }
     if (remoteVideoRef.current && remoteStream) {
       remoteVideoRef.current.srcObject = remoteStream;
+      console.log('aaaaaaaaaaaaaaaaaaa',remoteVideoRef);
+      
     }
+    //remote stream đang bị null
+    console.log('aaaaaaaabbbbbbbbbbba',remoteStream);
+      
   }, [localStream, remoteStream]);
 
+
+useEffect(() => {
+  // ở đây nó cũng log ra true rồi, tại sao ở dưới
+  console.log("isAccept from useVideoCall:", isAccept);
+}, [isAccept]);
   useEffect(() => {
     if (!socket) return;
+    console.log(isAccept);    
     const clientId = getClientId();
-
     socket.on("room-update", (res: RoomUpdateResponse) => {
-      console.log("Received room-update:", res);
+      console.log("Received room-update in UserHai:", res);
       if (res.clients[1] === clientId && res.status === "waiting") {
-        setCallerId(res.clients[0]);
-        setIsCallModalOpen(true);
+        setCallerId(res.clients[0]); // Lưu callerId
+        setIsCallModalOpen(true); // Mở modal cho cuộc gọi đến
         addToast({
           title: "Cuộc gọi đến",
           description: `Đang nhận cuộc gọi từ ${res.clients[0]}`,
@@ -73,16 +69,16 @@ export default function UserHai() {
           timeout: 4000,
         });
       } else if (res.status === "started") {
-        setIsCallModalOpen(true);
+        setIsCallModalOpen(true); // Giữ modal mở khi cuộc gọi bắt đầu
         addToast({
-          title: "Cuộc gọi đã bắt đầu",
+          title: "Cuộc gọi đã bắt đầu!",
           description: "Kết nối thành công.",
           color: "success",
           variant: "flat",
           timeout: 4000,
         });
       } else if (res.status === "rejected") {
-        setIsCallModalOpen(false);
+        setIsCallModalOpen(false); // Đóng modal khi cuộc gọi bị từ chối
         addToast({
           title: "Cuộc gọi bị từ chối",
           description: "Cuộc gọi đã bị hủy.",
@@ -93,6 +89,7 @@ export default function UserHai() {
       }
     });
 
+    
     return () => {
       socket.off("room-update");
     };
@@ -110,7 +107,8 @@ export default function UserHai() {
       });
       return;
     }
-    handleAccept(clientId); // isAccept sẽ được set ở useVideoCall
+    console.log("Calling handleAccept with clientId:", clientId);
+    handleAccept(clientId);
   };
 
   const handleCallReject = () => {
@@ -138,7 +136,9 @@ export default function UserHai() {
   };
 
   return (
-    <div>
+    <div
+    >
+      {children}
       <h1
         style={{
           fontSize: "24px",
@@ -185,6 +185,7 @@ export default function UserHai() {
                   fontSize: "24px",
                   fontWeight: "700",
                   color: "#1e3a8a",
+                  letterSpacing: "0.5px",
                 }}
               >
                 {isAccept ? "Cuộc gọi video" : "Cuộc gọi đến"}
@@ -199,7 +200,11 @@ export default function UserHai() {
                 style={{
                   padding: "8px",
                   borderRadius: "50%",
+                  background: "transparent",
+                  transition: "background 0.2s ease",
                 }}
+                onMouseEnter={(e) => (e.currentTarget.style.background = "#e5e7eb")}
+                onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
               >
                 <X size={20} color="#6b7280" />
               </Button>
@@ -210,15 +215,15 @@ export default function UserHai() {
                 background: "linear-gradient(135deg, #f8fafc, #e2e8f0)",
               }}
             >
-              <div style={{ position: "relative", display: "flex", flexDirection: "column", gap: "16px" }}>
+              <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
                 <div
                   style={{
+                    position: "relative",
                     background: "#000",
                     borderRadius: "12px",
                     overflow: "hidden",
                     boxShadow: "0 4px 15px rgba(0, 0, 0, 0.3)",
                     height: "300px",
-                    position: "relative",
                   }}
                 >
                   <video
@@ -240,7 +245,7 @@ export default function UserHai() {
                         alignItems: "center",
                         justifyContent: "center",
                         background: "linear-gradient(135deg, #1e3a8a, #3b82f6)",
-                        color: "#fff",
+                        color: "#ffffff",
                         flexDirection: "column",
                         gap: "12px",
                       }}
@@ -263,53 +268,46 @@ export default function UserHai() {
                       </span>
                     </div>
                   )}
-                  {isAccept && (
-                    <div
-                      style={{
-                        position: "absolute",
-                        bottom: "16px",
-                        right: "16px",
-                        width: "160px",
-                        height: "120px",
-                        background: "#000",
-                        borderRadius: "8px",
-                        overflow: "hidden",
-                        border: "2px solid #ffffff",
-                        boxShadow: "0 2px 10px rgba(0, 0, 0, 0.2)",
-                      }}
-                    >
-                      <video
-                        ref={localVideoRef}
-                        autoPlay
-                        muted
-                        style={{
-                          width: "100%",
-                          height: "100%",
-                          objectFit: "cover",
-                        }}
-                      />
-                    </div>
-                  )}
                 </div>
-
+                {isAccept && (
+                  <div
+                    style={{
+                      position: "absolute",
+                      top: "32px",
+                      right: "32px",
+                      width: "160px",
+                      height: "120px",
+                      background: "#000",
+                      borderRadius: "8px",
+                      overflow: "hidden",
+                      boxShadow: "0 2px 10px rgba(0, 0, 0, 0.2)",
+                      border: "2px solid #ffffff",
+                      zIndex: 10,
+                    }}
+                  >
+                    <video
+                      ref={localVideoRef}
+                      autoPlay
+                      muted
+                      style={{
+                        width: "100%",
+                        height: "100%",
+                        objectFit: "cover",
+                      }}
+                    />
+                  </div>
+                )}
                 <div
                   style={{
                     textAlign: "center",
                     padding: "12px 0",
                     fontSize: "16px",
                     fontWeight: "500",
-                    color: isCalling
-                      ? "#f59e0b"
-                      : isAccept
-                      ? "#16a34a"
-                      : "#6b7280",
+                    color: isCalling ? "#f59e0b" : isAccept ? "#16a34a" : "#6b7280",
+                    transition: "color 0.3s ease",
                   }}
                 >
-                  {isCalling
-                    ? "Đang gọi..."
-                    : isAccept
-                    ? "Đã kết nối..."
-                    : "Cuộc gọi đã kết thúc."}
+                  {isCalling ? "Đang gọi..." : isAccept ? "Đã kết nối..." : "Cuộc gọi đã kết thúc."}
                 </div>
               </div>
             </ModalBody>
@@ -331,11 +329,14 @@ export default function UserHai() {
                     onClick={handleCallAccept}
                     style={{
                       background: "linear-gradient(135deg, #16a34a, #15803d)",
-                      color: "#fff",
+                      color: "#f9fafb",
                       padding: "10px 24px",
                       borderRadius: "20px",
                       fontWeight: "600",
+                      transition: "transform 0.2s ease, background 0.3s ease",
                     }}
+                    onMouseEnter={(e) => (e.currentTarget.style.transform = "scale(1.05)")}
+                    onMouseLeave={(e) => (e.currentTarget.style.transform = "scale(1)")}
                   >
                     <Check size={20} style={{ marginRight: "8px" }} />
                     Chấp nhận
@@ -346,11 +347,14 @@ export default function UserHai() {
                     onClick={handleCallReject}
                     style={{
                       background: "linear-gradient(135deg, #ef4444, #dc2626)",
-                      color: "#fff",
+                      color: "#f9fafb",
                       padding: "10px 24px",
                       borderRadius: "20px",
                       fontWeight: "600",
+                      transition: "transform 0.2s ease, background 0.3s ease",
                     }}
+                    onMouseEnter={(e) => (e.currentTarget.style.transform = "scale(1.05)")}
+                    onMouseLeave={(e) => (e.currentTarget.style.transform = "scale(1)")}
                   >
                     <PhoneOff size={20} style={{ marginRight: "8px" }} />
                     Từ chối
@@ -364,11 +368,14 @@ export default function UserHai() {
                   onClick={cancelCall}
                   style={{
                     background: "linear-gradient(135deg, #ef4444, #dc2626)",
-                    color: "#fff",
+                    color: "#f9fafb",
                     padding: "10px 24px",
                     borderRadius: "20px",
                     fontWeight: "600",
+                    transition: "transform 0.2s ease, background 0.3s ease",
                   }}
+                  onMouseEnter={(e) => (e.currentTarget.style.transform = "scale(1.05)")}
+                  onMouseLeave={(e) => (e.currentTarget.style.transform = "scale(1)")}
                 >
                   <PhoneOff size={20} style={{ marginRight: "8px" }} />
                   Hủy cuộc gọi
