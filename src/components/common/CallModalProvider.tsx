@@ -227,15 +227,19 @@ useEffect(() => {
                   }}
                 >
                   <video
-                    ref={remoteVideoRef}
-                    autoPlay
-                    style={{
-                      width: "100%",
-                      height: "100%",
-                      objectFit: "cover",
-                      borderRadius: "12px",
-                    }}
-                  />
+                  ref={remoteVideoRef}
+                  autoPlay
+                  muted={false}
+                  controls
+                  playsInline
+                  style={{
+                    width: "100%",
+                    height: "100%",
+                    objectFit: "cover",
+                    borderRadius: "12px",
+                  }}
+                />
+
                   {!isAccept && (
                     <div
                       style={{
