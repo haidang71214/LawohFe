@@ -3,6 +3,7 @@ import React, { createContext, useContext, useState, useMemo, useEffect, useRef 
 import { v4 as uuidv4 } from "uuid";
 import { SocketContext } from "./socketProvider";
 import { addToast } from "@heroui/react";
+import { MediaConnection } from "peerjs";
 
 interface VideoProviderInterface {
   openVideoCall: (callerId: string, calleeId: string) => void;
@@ -27,23 +28,86 @@ export default function VideoProvider({ children }: { children: React.ReactNode 
   const { socket, peer, peerId } = useContext(SocketContext)!;
   const [localStream, setLocalStream] = useState<MediaStream | null>(null);
   const [remoteStream, setRemoteStream] = useState<MediaStream | null>(null);
-  const latestPeerId = useRef<string | null>(null);
+  const currentCall = useRef<MediaConnection | null>(null);
+  const mediaStreamRef = useRef<MediaStream | null>(null);
+
+  // Define getMediaStream outside useEffect
+  const getMediaStream = async (): Promise<MediaStream | null> => {
+    if (mediaStreamRef.current) return mediaStreamRef.current;
+
+    try {
+      const permissions = await Promise.all([
+        navigator.permissions.query({ name: "camera" as PermissionName }),
+        navigator.permissions.query({ name: "microphone" as PermissionName }),
+      ]);
+
+      if (permissions[0].state !== "granted" || permissions[1].state !== "granted") {
+        addToast({
+          title: "Quyền bị từ chối",
+          description: "Vui lòng cấp quyền sử dụng webcam và micro.",
+          color: "danger",
+          variant: "flat",
+          timeout: 4000,
+        });
+        return null;
+      }
+
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: true,
+        audio: true,
+      });
+
+      mediaStreamRef.current = stream;
+      setLocalStream(stream); // Update localStream state
+      return stream;
+    } catch (err) {
+      console.error("Lỗi truy cập media: ", err);
+      addToast({
+        title: "Lỗi truy cập thiết bị",
+        description: "Không thể lấy quyền truy cập webcam hoặc micro.",
+        color: "danger",
+        variant: "flat",
+        timeout: 4000,
+      });
+      return null;
+    }
+  };
+
   useEffect(() => {
     console.log("isAccept changed:", isAccept);
   }, [isAccept]);
+
   useEffect(() => {
-    if (peer && localStream && latestPeerId.current) {
-      const call = peer.call(latestPeerId.current, localStream);
-      call.on("stream", (remoteStream) => {
-        setRemoteStream(remoteStream);
-      });
-      call.on("error", (err) => {
-        console.error("Call error:", err);
-      });
+    if (peer) {
+      peer.on("call", handleIncomingCall);
     }
-  }, [peer, localStream]);
+
+    return () => {
+      peer?.off("call", handleIncomingCall);
+    };
+  }, [peer]);
+
+  const handleIncomingCall = async (call: MediaConnection) => {
+    const stream = await getMediaStream();
+    if (!stream) return;
+
+    call.answer(stream);
+
+    call.on("stream", (remoteStream) => {
+      setRemoteStream(remoteStream);
+    });
+
+    call.on("close", () => {
+      setRemoteStream(null);
+      setLocalStream(null);
+      mediaStreamRef.current = null;
+    });
+
+    currentCall.current = call;
+  };
+
   useEffect(() => {
-    if (!socket|| !peer || !peerId) return;
+    if (!socket || !peer || !peerId) return;
 
     const handleRoomUpdate = (res: any) => {
       console.log("room-update từ server:", res);
@@ -57,288 +121,143 @@ export default function VideoProvider({ children }: { children: React.ReactNode 
         console.log("Room status: started");
         setIsAccept(true);
         setIsCalling(false);
-        // ở trường hợp stated, chưa set local Stream
       } else if (res.status === "rejected") {
         console.log("Room status: rejected");
         setIsReject(true);
         setIsCalling(false);
         setLocalStream(null);
         setRemoteStream(null);
+        mediaStreamRef.current = null;
       }
     };
 
-    // Lắng nghe peerId từ client khác
-    const handleReceivePeerId = async ({ peerId }: { peerId: string }) => {
-      console.log("Received peerId:", peerId);
-      latestPeerId.current = peerId;
-      // Nếu localStream chưa tồn tại, thiết lập nó
-      if (!localStream) {
-        try {
-          const stream = await getMediaStream();
-          setLocalStream(stream);
-          console.log("Local stream set in handleReceivePeerId:", stream);
-        } catch (error) {
-          console.error("Error accessing media devices in handleReceivePeerId:", error);
-          addToast({
-            title: "Lỗi truy cập thiết bị",
-            description: "Vui lòng cấp quyền sử dụng webcam và micro.",
-            color: "danger",
-            variant: "flat",
-            timeout: 4000,
-          });
-          return; // Thoát nếu không thể thiết lập stream
-        }
-      }
-    
-      // Gọi peer.call chỉ khi localStream và peer tồn tại
-      if (localStream && peer) {
-        console.log("Calling peer.call with localStream:", localStream);
-        const call = peer.call(peerId, localStream); // Sửa lỗi: chỉ truyền peerId và localStream
-        call.on("stream", (remoteStream) => {
-          console.log("Received remoteStream:", remoteStream);
-          setRemoteStream(remoteStream);
-        });
-        call.on("error", (err) => {
-          console.error("Call error:", err);
-          addToast({
-            title: "Lỗi cuộc gọi",
-            description: "Đã xảy ra lỗi trong quá trình kết nối.",
-            color: "danger",
-            variant: "flat",
-            timeout: 4000,
-          });
-        });
-        call.on("close", () => {
-          console.log("Call closed");
-          setLocalStream(null);
-          setRemoteStream(null);
-          setIsAccept(false);
-        });
-      }else if (!localStream) {
-        try {
-          const stream = await getMediaStream();
-          setLocalStream(stream);
-          console.log("Local stream set in handleReceivePeerId:", stream);
-        } catch (error) {
-          console.error("Error accessing media devices in handleReceivePeerId:", error);
-          addToast({
-            title: "Lỗi truy cập thiết bị",
-            description: "Vui lòng cấp quyền sử dụng webcam và micro.",
-            color: "danger",
-            variant: "flat",
-            timeout: 4000,
-          });
-          return;
-        }
-      }
-       else {
-        console.error("No localStream or peer available",localStream, peer);
+    const handleReceivePeerId = async ({ peerId: remotePeerId }: { peerId: string }) => {
+      console.log("Received peerId:", remotePeerId);
+      const stream = await getMediaStream();
+      if (!stream || !peer) return;
+
+      const call = peer.call(remotePeerId, stream);
+      currentCall.current = call;
+
+      call.on("stream", (remoteStream) => {
+        console.log("Received remoteStream:", remoteStream);
+        setRemoteStream(remoteStream);
+      });
+
+      call.on("error", (err) => {
+        console.error("Call error:", err);
         addToast({
-          title: "Lỗi kết nối",
-          description: "Không thể thiết lập cuộc gọi do thiếu stream hoặc peer.",
+          title: "Lỗi cuộc gọi",
+          description: "Đã xảy ra lỗi trong quá trình kết nối.",
           color: "danger",
           variant: "flat",
           timeout: 4000,
         });
-      }
+      });
+
+      call.on("close", () => {
+        console.log("Call closed");
+        setLocalStream(null);
+        setRemoteStream(null);
+        setIsAccept(false);
+        mediaStreamRef.current = null;
+      });
     };
+
     socket.on("room-update", handleRoomUpdate);
     socket.on("receive-peer-id", handleReceivePeerId);
-    const checkMediaPermissions = async () => {
-      try {
-        const cameraPermission = await navigator.permissions.query({ name: "camera" });
-        const micPermission = await navigator.permissions.query({ name: "microphone" });
-        if (cameraPermission.state !== "granted" || micPermission.state !== "granted") {
-          addToast({
-            title: "Quyền bị từ chối",
-            description: "Vui lòng cấp quyền sử dụng webcam và micro.",
-            color: "danger",
-            variant: "flat",
-            timeout: 4000,
-          });
-          return false;
-        }
-        return true;
-      } catch (err) {
-        console.error("Error checking permissions:", err);
-        return false;
-      }
-    };
-    
-    const getMediaStream = async () => {
-      const hasPermission = await checkMediaPermissions();
-      if (!hasPermission) return null;
-      console.log(hasPermission);
-      
-      try {
-        const stream = await navigator.mediaDevices.getUserMedia({
-          video: true,
-          audio: true,
-        });
-        return stream;
-      } catch (err) {
-        console.error("Error accessing media devices:", err);
-        addToast({
-          title: "Lỗi truy cập thiết bị",
-          description: "Vui lòng cấp quyền sử dụng webcam và micro.",
-          color: "danger",
-          variant: "flat",
-          timeout: 4000,
-        });
-        return null;
-      }
-    };
-    peer.on("call", async (call) => {
-      console.log("Incoming call from peer:", call.peer);
-      try {
-        const stream = await getMediaStream();
-        if (!stream) return;
-        setLocalStream(stream);
-        console.log("Answering call with localStream:", stream);
-        call.answer(stream);
-        call.on("stream", (remoteStream) => {
-          console.log("Received remoteStream:", remoteStream);
-          setRemoteStream(remoteStream);
-        });
-        call.on("error", (err) => {
-          console.error("Call error:", err);
-          addToast({
-            title: "Lỗi cuộc gọi",
-            description: "Đã xảy ra lỗi trong quá trình kết nối.",
-            color: "danger",
-            variant: "flat",
-            timeout: 4000,
-          });
-        });
-        call.on("close", () => {
-          console.log("Call closed");
-          setLocalStream(null);
-          setRemoteStream(null);
-          setIsAccept(false);
-        });
-      } catch (err) {
-        console.error("Error accessing media devices:", err);
-        addToast({
-          title: "Lỗi truy cập thiết bị",
-          description: "Vui lòng cấp quyền sử dụng webcam và micro.",
-          color: "danger",
-          variant: "flat",
-          timeout: 4000,
-        });
-      }
-    });
 
     return () => {
       socket?.off("room-update", handleRoomUpdate);
       socket?.off("receive-peer-id", handleReceivePeerId);
-    
-      // cleanup peer event
       peer?.off("call");
-    
-      // cleanup local stream
-      localStream?.getTracks().forEach(track => track.stop());
-      if (localStream) {
-        localStream.getTracks().forEach((track) => track.stop());
+
+      // Cleanup media stream
+      if (mediaStreamRef.current) {
+        mediaStreamRef.current.getTracks().forEach((track) => track.stop());
+        mediaStreamRef.current = null;
       }
+      setLocalStream(null);
+      setRemoteStream(null);
     };
-  }, [peer, peerId]);
+  }, [socket, peer, peerId]);
 
   const openVideoCall = async (callerId: string, calleeId: string) => {
     if (!peer || !peerId || !socket) return;
+
     const newRoomId = uuidv4();
     setRoomId(newRoomId);
     setIsCalling(true);
     setIsAccept(false);
     setIsReject(false);
 
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({
-        video: true,
-        audio: true,
-      });
-      setLocalStream(stream);
-      console.log("Local stream set:", stream);
+    const stream = await getMediaStream();
+    if (!stream) return;
 
-      socket.emit("join-video-room", newRoomId, callerId, calleeId);
-      console.log("Emitted join-video-room:", { roomId: newRoomId, callerId, calleeId });
+    socket.emit("join-video-room", newRoomId, callerId, calleeId);
+    console.log("Emitted join-video-room:", { roomId: newRoomId, callerId, calleeId });
 
-      // Gửi peerId của caller
-      socket.emit("send-peer-id", { roomId: newRoomId, peerId, recipientId: calleeId });
-      console.log("Emitted send-peer-id:", { roomId: newRoomId, peerId, recipientId: calleeId });
-    } catch (err) {
-      console.error("Error accessing media devices:", err);
-      addToast({
-        title: "Lỗi truy cập thiết bị",
-        description: "Vui lòng cấp quyền sử dụng webcam và micro.",
-        color: "danger",
-        variant: "flat",
-        timeout: 4000,
-      });
-    }
+    socket.emit("send-peer-id", { roomId: newRoomId, peerId, recipientId: calleeId });
+    console.log("Emitted send-peer-id:", { roomId: newRoomId, peerId, recipientId: calleeId });
   };
 
   const handleAccept = async (clientId: string) => {
     if (!roomId || !socket || !peer || !peerId) return;
 
-    try {
-      if (!localStream) {
-        
-        const stream = await navigator.mediaDevices.getUserMedia({
-          video: true,
-          audio: true,
-        });
-        stream.getTracks()
-      .forEach(track => track.stop())
-        setLocalStream(stream);
-        console.log("Local stream set in handleAccept:", stream);
-      }
+    const stream = await getMediaStream();
+    if (!stream) return;
 
-      socket.emit("join-video-room", roomId, clientId);
-      console.log("Emitted join-video-room:", { roomId, clientId, callerId: "2" });
+    socket.emit("join-video-room", roomId, clientId);
+    console.log("Emitted join-video-room:", { roomId, clientId });
 
-      // Gửi peerId của callee
-      socket.emit("send-peer-id", { roomId, peerId});
-      console.log("Emitted send-peer-id:", { roomId, peerId, recipientId: "2" });
+    socket.emit("send-peer-id", { roomId, peerId });
+    console.log("Emitted send-peer-id:", { roomId, peerId });
 
-      setIsAccept(true);
-      setIsReject(false);
-      setIsCalling(false);
-    } catch (err) {
-      console.error("Error in handleAccept:", err);
-      addToast({
-        title: "Lỗi khi chấp nhận cuộc gọi",
-        description: "Không thể truy cập thiết bị hoặc thiết lập kết nối.",
-        color: "danger",
-        variant: "flat",
-        timeout: 4000,
-      });
-    }
+    setIsAccept(true);
+    setIsReject(false);
+    setIsCalling(false);
   };
 
   const handleReject = () => {
     if (!roomId || !socket) return;
+
+    if (currentCall.current) {
+      currentCall.current.close();
+      currentCall.current = null;
+    }
+
     socket.emit("reject-call", roomId);
     setIsReject(true);
     setIsAccept(false);
     setIsCalling(false);
-    if (localStream) {
-      localStream.getTracks().forEach((track) => track.stop());
-      setLocalStream(null);
+
+    if (mediaStreamRef.current) {
+      mediaStreamRef.current.getTracks().forEach((track) => track.stop());
+      mediaStreamRef.current = null;
     }
+    setLocalStream(null);
     setRemoteStream(null);
   };
 
   const closeVideoCall = () => {
     if (!roomId || !socket) return;
+
+    if (currentCall.current) {
+      currentCall.current.close();
+      currentCall.current = null;
+    }
+
     socket.emit("leave-video-room", roomId);
     setRoomId("");
     setIsAccept(false);
     setIsReject(false);
     setIsCalling(false);
-    if (localStream) {
-      localStream.getTracks().forEach((track) => track.stop());
-      setLocalStream(null);
+
+    if (mediaStreamRef.current) {
+      mediaStreamRef.current.getTracks().forEach((track) => track.stop());
+      mediaStreamRef.current = null;
     }
+    setLocalStream(null);
     setRemoteStream(null);
   };
 
