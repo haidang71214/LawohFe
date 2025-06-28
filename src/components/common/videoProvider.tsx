@@ -31,9 +31,11 @@ export default function VideoProvider({ children }: { children: React.ReactNode 
   const currentCall = useRef<MediaConnection | null>(null);
   const mediaStreamRef = useRef<MediaStream | null>(null);
 
-  // Define getMediaStream outside useEffect
   const getMediaStream = async (): Promise<MediaStream | null> => {
-    if (mediaStreamRef.current) return mediaStreamRef.current;
+    if (mediaStreamRef.current) {
+      console.log("Tái sử dụng stream hiện tại, tracks:", mediaStreamRef.current.getTracks());
+      return mediaStreamRef.current;
+    }
 
     try {
       const permissions = await Promise.all([
@@ -44,7 +46,7 @@ export default function VideoProvider({ children }: { children: React.ReactNode 
       if (permissions[0].state !== "granted" || permissions[1].state !== "granted") {
         addToast({
           title: "Quyền bị từ chối",
-          description: "Vui lòng cấp quyền sử dụng webcam và micro.",
+          description: "Vui lòng cấp quyền webcam và micro trong trình duyệt.",
           color: "danger",
           variant: "flat",
           timeout: 4000,
@@ -54,17 +56,22 @@ export default function VideoProvider({ children }: { children: React.ReactNode 
 
       const stream = await navigator.mediaDevices.getUserMedia({
         video: true,
-        audio: true,
+        audio: {
+          echoCancellation: true,
+          noiseSuppression: true,
+          autoGainControl: true,
+        },
       });
 
+      console.log("Tạo stream mới, tracks:", stream.getTracks());
       mediaStreamRef.current = stream;
-      setLocalStream(stream); // Update localStream state
+      setLocalStream(stream);
       return stream;
     } catch (err) {
-      console.error("Lỗi truy cập media: ", err);
+      console.error("Lỗi lấy media:", err);
       addToast({
         title: "Lỗi truy cập thiết bị",
-        description: "Không thể lấy quyền truy cập webcam hoặc micro.",
+        description: "Không thể lấy webcam hoặc micro. Kiểm tra quyền hoặc thiết bị.",
         color: "danger",
         variant: "flat",
         timeout: 4000,
@@ -74,55 +81,77 @@ export default function VideoProvider({ children }: { children: React.ReactNode 
   };
 
   useEffect(() => {
-    console.log("isAccept changed:", isAccept);
-  }, [isAccept]);
-
-  useEffect(() => {
     if (peer) {
       peer.on("call", handleIncomingCall);
+      console.log("Đăng ký listener cho peer.on('call')");
     }
 
     return () => {
       peer?.off("call", handleIncomingCall);
+      console.log("Gỡ listener peer.on('call')");
     };
   }, [peer]);
 
   const handleIncomingCall = async (call: MediaConnection) => {
+    console.log("Nhận cuộc gọi từ peer:", call.peer);
     const stream = await getMediaStream();
-    if (!stream) return;
+    if (!stream) {
+      console.error("Không có local stream để trả lời cuộc gọi");
+      return;
+    }
 
     call.answer(stream);
+    console.log("Trả lời cuộc gọi với stream, tracks:", stream.getTracks());
+    currentCall.current = call;
 
     call.on("stream", (remoteStream) => {
+      console.log("Nhận remote stream, tracks:", remoteStream.getTracks());
+      if (remoteStream.getAudioTracks().length === 0) {
+        console.error("Remote stream không có track audio");
+      }
       setRemoteStream(remoteStream);
     });
 
+    call.on("error", (err) => {
+      console.error("Lỗi cuộc gọi:", err);
+      addToast({
+        title: "Lỗi cuộc gọi",
+        description: "Có lỗi khi kết nối. Vui lòng thử lại.",
+        color: "danger",
+        variant: "flat",
+        timeout: 4000,
+      });
+    });
+
     call.on("close", () => {
+      console.log("Cuộc gọi đóng");
       setRemoteStream(null);
       setLocalStream(null);
       mediaStreamRef.current = null;
+      setIsAccept(false);
     });
-
-    currentCall.current = call;
   };
 
   useEffect(() => {
-    if (!socket || !peer || !peerId) return;
+    if (!socket || !peer || !peerId) {
+      console.log("Thiếu socket, peer hoặc peerId");
+      return;
+    }
 
     const handleRoomUpdate = (res: any) => {
-      console.log("room-update từ server:", res);
+      console.log("Nhận room-update từ server:", res);
       setRoomId(res.roomId);
       if (res.status === "waiting") {
-        console.log("Room status: waiting");
+        console.log("Trạng thái phòng: waiting");
         setIsCalling(true);
         setIsAccept(false);
         setIsReject(false);
       } else if (res.status === "started") {
-        console.log("Room status: started");
+        console.log("Trạng thái phòng: started");
         setIsAccept(true);
         setIsCalling(false);
       } else if (res.status === "rejected") {
-        console.log("Room status: rejected");
+        console.log("Trạng thái phòng: rejected");
         setIsReject(true);
         setIsCalling(false);
         setLocalStream(null);
@@ -132,23 +161,30 @@ export default function VideoProvider({ children }: { children: React.ReactNode 
     };
 
     const handleReceivePeerId = async ({ peerId: remotePeerId }: { peerId: string }) => {
-      console.log("Received peerId:", remotePeerId);
+      console.log("Nhận peerId từ đối phương:", remotePeerId);
       const stream = await getMediaStream();
-      if (!stream || !peer) return;
+      if (!stream || !peer) {
+        console.error("Không có stream hoặc peer để gọi");
+        return;
+      }
 
+      console.log("Gọi peer với stream, tracks:", stream.getTracks());
       const call = peer.call(remotePeerId, stream);
       currentCall.current = call;
 
       call.on("stream", (remoteStream) => {
-        console.log("Received remoteStream:", remoteStream);
+        console.log("Nhận remote stream, tracks:", remoteStream.getTracks());
+        if (remoteStream.getAudioTracks().length === 0) {
+          console.error("Remote stream không có track audio");
+        }
         setRemoteStream(remoteStream);
       });
 
       call.on("error", (err) => {
-        console.error("Call error:", err);
+        console.error("Lỗi cuộc gọi:", err);
         addToast({
           title: "Lỗi cuộc gọi",
-          description: "Đã xảy ra lỗi trong quá trình kết nối.",
+          description: "Có lỗi khi kết nối. Vui lòng thử lại.",
           color: "danger",
           variant: "flat",
           timeout: 4000,
@@ -156,7 +192,7 @@ export default function VideoProvider({ children }: { children: React.ReactNode 
       });
 
       call.on("close", () => {
-        console.log("Call closed");
+        console.log("Cuộc gọi đóng");
         setLocalStream(null);
         setRemoteStream(null);
         setIsAccept(false);
@@ -172,18 +208,22 @@ export default function VideoProvider({ children }: { children: React.ReactNode 
       socket?.off("receive-peer-id", handleReceivePeerId);
       peer?.off("call");
 
-      // Cleanup media stream
       if (mediaStreamRef.current) {
+        console.log("Dọn dẹp stream, tracks:", mediaStreamRef.current.getTracks());
         mediaStreamRef.current.getTracks().forEach((track) => track.stop());
         mediaStreamRef.current = null;
       }
       setLocalStream(null);
       setRemoteStream(null);
+      console.log("Dọn dẹp useEffect chính");
     };
   }, [socket, peer, peerId]);
 
   const openVideoCall = async (callerId: string, calleeId: string) => {
-    if (!peer || !peerId || !socket) return;
+    if (!peer || !peerId || !socket) {
+      console.error("Thiếu peer, peerId hoặc socket");
+      return;
+    }
 
     const newRoomId = uuidv4();
     setRoomId(newRoomId);
@@ -192,26 +232,35 @@ export default function VideoProvider({ children }: { children: React.ReactNode 
     setIsReject(false);
 
     const stream = await getMediaStream();
-    if (!stream) return;
+    if (!stream) {
+      console.error("Không lấy được stream để gọi");
+      return;
+    }
 
     socket.emit("join-video-room", newRoomId, callerId, calleeId);
-    console.log("Emitted join-video-room:", { roomId: newRoomId, callerId, calleeId });
+    console.log("Gửi join-video-room:", { roomId: newRoomId, callerId, calleeId });
 
     socket.emit("send-peer-id", { roomId: newRoomId, peerId, recipientId: calleeId });
-    console.log("Emitted send-peer-id:", { roomId: newRoomId, peerId, recipientId: calleeId });
+    console.log("Gửi send-peer-id:", { roomId: newRoomId, peerId, recipientId: calleeId });
   };
 
   const handleAccept = async (clientId: string) => {
-    if (!roomId || !socket || !peer || !peerId) return;
+    if (!roomId || !socket || !peer || !peerId) {
+      console.error("Thiếu roomId, socket, peer hoặc peerId");
+      return;
+    }
 
     const stream = await getMediaStream();
-    if (!stream) return;
+    if (!stream) {
+      console.error("Không lấy được stream để chấp nhận cuộc gọi");
+      return;
+    }
 
     socket.emit("join-video-room", roomId, clientId);
-    console.log("Emitted join-video-room:", { roomId, clientId });
+    console.log("Gửi join-video-room:", { roomId, clientId });
 
     socket.emit("send-peer-id", { roomId, peerId });
-    console.log("Emitted send-peer-id:", { roomId, peerId });
+    console.log("Gửi send-peer-id:", { roomId, peerId });
 
     setIsAccept(true);
     setIsReject(false);
@@ -224,6 +273,7 @@ export default function VideoProvider({ children }: { children: React.ReactNode 
     if (currentCall.current) {
       currentCall.current.close();
       currentCall.current = null;
+      console.log("Đóng MediaConnection");
     }
 
     socket.emit("reject-call", roomId);
@@ -232,6 +282,7 @@ export default function VideoProvider({ children }: { children: React.ReactNode 
     setIsCalling(false);
 
     if (mediaStreamRef.current) {
+      console.log("Dọn dẹp stream khi từ chối, tracks:", mediaStreamRef.current.getTracks());
       mediaStreamRef.current.getTracks().forEach((track) => track.stop());
       mediaStreamRef.current = null;
     }
@@ -245,6 +296,7 @@ export default function VideoProvider({ children }: { children: React.ReactNode 
     if (currentCall.current) {
       currentCall.current.close();
       currentCall.current = null;
+      console.log("Đóng MediaConnection");
     }
 
     socket.emit("leave-video-room", roomId);
@@ -254,6 +306,7 @@ export default function VideoProvider({ children }: { children: React.ReactNode 
     setIsCalling(false);
 
     if (mediaStreamRef.current) {
+      console.log("Dọn dẹp stream khi đóng cuộc gọi, tracks:", mediaStreamRef.current.getTracks());
       mediaStreamRef.current.getTracks().forEach((track) => track.stop());
       mediaStreamRef.current = null;
     }
@@ -287,7 +340,7 @@ export default function VideoProvider({ children }: { children: React.ReactNode 
 export const useVideoCall = () => {
   const context = useContext(VideoContextProvider);
   if (!context) {
-    throw new Error("useVideoCall must be used within a VideoProvider");
+    throw new Error("useVideoCall phải được dùng trong VideoProvider");
   }
   return context;
 };
