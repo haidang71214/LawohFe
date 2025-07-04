@@ -1,6 +1,6 @@
 'use client'
 import React, { useEffect, useState } from 'react';
-import { Home, Users, CreditCard, Gift, DollarSign } from 'lucide-react';
+import { Home, Users, CreditCard, Gift, DollarSign, Newspaper } from 'lucide-react';
 import {
   SidebarContent,
   SidebarHeader,
@@ -41,6 +41,11 @@ const menuItems = [
     url: '/admin/price-range',
     icon: DollarSign,
   },
+  {
+    title: 'Quản lí bài đăng',
+    url: '/admin/newsManager',
+    icon: Newspaper,
+  }
 ];
 
 const NavbarSider = () => {

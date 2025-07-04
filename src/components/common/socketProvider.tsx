@@ -34,7 +34,7 @@ export default function SocketProvider({
     });
 
     newSocket.on("connect_error", (error) => {
-      console.error("SocketProvider connection error:", error);
+      console.log("SocketProvider connection error:", error);
     });
     const newPeer = new Peer({
       host: '0.peerjs.com', // You can replace this with your own PeerJS server

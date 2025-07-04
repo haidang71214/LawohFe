@@ -50,7 +50,7 @@ export default function UserChatLawyer({ id, onClose }: UserChatLawyerProps) {
       const userProfile: UserProfile = JSON.parse(userProfileRaw);
       const currentUserId = userProfile._id;
       if (!currentUserId || !id) {
-        console.error('Invalid userId or conversationId:', { currentUserId, id });
+        console.log('Invalid userId or conversationId:', { currentUserId, id });
         return;
       }
       setUserId(currentUserId);
@@ -158,8 +158,7 @@ export default function UserChatLawyer({ id, onClose }: UserChatLawyerProps) {
   const sendMessage = () => {
     if (!socket || !messageInput.trim() || !id || messageInput.length > 500) {
       addToast({
-        title: "Nghe bài trình chưa ?",
-        description: "Lo mà nhập cho đúng đi",
+        title: "Không để trống ô khi gửi",
         color: "danger",
         variant: "flat",
         timeout: 3000,

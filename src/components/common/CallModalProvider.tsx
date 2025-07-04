@@ -139,17 +139,6 @@ useEffect(() => {
     <div
     >
       {children}
-      <h1
-        style={{
-          fontSize: "24px",
-          fontWeight: "700",
-          color: "#1E3A8A",
-          textAlign: "center",
-          marginBottom: "20px",
-        }}
-      >
-        UserHai - Nhận cuộc gọi video
-      </h1>
 
       {isCallModalOpen && (
         <Modal
