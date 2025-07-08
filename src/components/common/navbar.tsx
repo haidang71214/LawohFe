@@ -1,4 +1,3 @@
-// components/Navbar.tsx
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
@@ -16,13 +15,13 @@ import SliderChatUser from './SliderChatUser';
 import UserChatLawyer from './userChatLawyer';
 import { useChat } from './chatContext';
 
+
 const Navbar = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isMounted, setIsMounted] = useState(false);
   const router = useRouter();
   const pathname = usePathname();
   const { isChatOpen, currentConversationId, currentLawyerId, openChat, closeChat } = useChat();
-
   useEffect(() => {
     setIsMounted(true);
   }, []);
@@ -79,6 +78,7 @@ const Navbar = () => {
   const detailLaywerInforMation = () => {
     router.push('/update-LawyerDetailInformation');
   };
+
 
   const handleLogout = () => {
     localStorage.removeItem(LOGIN_USER);
@@ -235,9 +235,9 @@ const Navbar = () => {
           <Link href="/" className={styles.navLink}>
             Trang chủ
           </Link>
-          <Link href="/about" className={styles.navLink}>
+          {/* <Link href="/about" className={styles.navLink}>
             Giới thiệu
-          </Link>
+          </Link> */}
           <div className="relative group">
             <button className={`${styles.navLink} flex items-center gap-2`}>
               Mẫu đơn từ
@@ -256,116 +256,124 @@ const Navbar = () => {
                 </Link>
               ))}
             </div>
-          </div>
-          <Link href="/course" className={styles.navLink}>
-            Video
-          </Link>
-          <Link href="/ai" className={styles.navLink}>
-            AI
-          </Link>
-          <div className="relative group">
-            <Link href={`/lawyers`} className={`${styles.navLink} flex items-center gap-2`}>
-              Luật sư tốt theo lĩnh vực
+            </div>
+            <Link href="/course" className={styles.navLink}>
+              Video
+            </Link>
+            <Link href="/ai" className={styles.navLink}>
+              AI
+            </Link>
+            <div className="relative group">
+              <Link href={`/lawyers`} className={`${styles.navLink} flex items-center gap-2`}>
+                Luật sư tốt theo lĩnh vực
+              </Link>
+            </div>
+            <Link href={`/NewsPage`} className={styles.navLink}>
+              Tin tức
             </Link>
           </div>
-        </div>
 
-        <div style={{ color: 'white', display: 'flex' }}>
-          {user ? (
-            <div
-              className="relative"
-              onMouseLeave={() => setIsDropdownOpen(false)}
-            >
+          <div style={{ color: 'white', display: 'flex' }}>
+            {user ? (
               <div
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '12px',
-                  padding: '8px',
-                  borderRadius: '8px',
-                  transition: 'background 0.2s',
-                  fontFamily: 'monospace',
-                }}
+                className="relative"
+                onMouseLeave={() => setIsDropdownOpen(false)}
               >
-                <Avatar
-                  src={user?.avartar_url || '/default-avatar.png'}
-                  alt="avatar"
-                  className="rounded-full cursor-pointer"
-                  onClick={toggleDropdown}
-                  ref={avatarRef}
-                  isBordered
-                  color="default"
-                />
-                <div>
-                  <div>{user.name}</div>
-                  <div>{user.role}</div>
-                </div>
-                <div>
-                <Button
-                  onClick={() => openChat(null, '')} // Open SliderChatUser without a specific conversation
-                  style={{ marginLeft: '10px' }}
-                >
-                  Chat
-                </Button>
-                <Link href="/videoself">
-                Quản lí video
-               </Link>
-                </div>
-                
-              </div>
-              {isDropdownOpen && (
                 <div
-                  ref={dropdownRef}
-                  className="absolute w-48 bg-white shadow-lg rounded-lg z-10"
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '1px',
+                    padding: '8px',
+                    borderRadius: '8px',
+                    transition: 'background 0.2s',
+                    fontFamily: 'monospace',
+                  }}
                 >
-                  <Button onPress={handleUpdateInfo} fullWidth style={{ color: 'black' }}>
-                    Cập nhật thông tin
-                  </Button>
-                  <Button onPress={handleBookingList} fullWidth style={{ color: 'black' }}>
-                    Booking đã gửi
-                  </Button>
-                  {user.role === 'lawyer' && (
-                    <Button onPress={handleAcceptedBookings} fullWidth style={{ color: 'black' }}>
-                      Booking đã nhận
+                  <Avatar
+                    src={user?.avartar_url || '/default-avatar.png'}
+                    alt="avatar"
+                    className="rounded-full cursor-pointer"
+                    onClick={toggleDropdown}
+                    ref={avatarRef}
+                    isBordered
+                    color="default"
+                  />
+                  <div style={{marginLeft:10}}>
+                    <div>{user.name}</div>
+                    <div>{user.role}</div>
+                  </div>
+                  <div>
+                    <Button
+                      onClick={() => openChat(null, '')}
+                      style={{ marginLeft: '10px' }}
+                    >
+                      Chat
                     </Button>
-                  )}
-                  {user.role === 'lawyer' && (
-                    <Button onPress={detailLaywerInforMation} fullWidth style={{ color: 'black' }}>
-                      Cập nhật với vai trò luật sư
-                    </Button>
-                  )}
-                  <Button onPress={handleLogout} fullWidth style={{ color: 'black' }}>
-                    Đăng xuất
-                  </Button>
+                    <Link href="/videoself">
+                      Quản lí video
+                    </Link>
+                   {user.role === 'lawyer' ?   
+                    <Link style={{marginLeft:20}} href='/newsManagerr'>
+                    Quản lí bài đăng
+                    </Link>:null
+                    }
+                  </div>
                 </div>
-              )}
-            </div>
-          ) : (
-            <div style={{ color: 'white', display: 'flex' }}>
-              <Link href="/login" className={styles.navLink}>
-                Đăng nhập
-              </Link>
-              /
-              <Link href="/register" className={styles.navLink}>
-                Đăng kí
-              </Link>
-            </div>
-          )}
-        </div>
-      </div>
-      {isChatOpen && (
-        <>
-          <SliderChatUser
-            onClose={closeChat}
-            onSelectConversation={(conversationId: string) => openChat(conversationId, '')}
-          />
-          {currentConversationId && currentLawyerId !== null && (
-            <UserChatLawyer id={currentConversationId} onClose={closeChat} />
-          )}
-        </>
-      )}
-    </nav>
-  );
-};
+                {isDropdownOpen && (
+                  <div
+                    ref={dropdownRef}
+                    className="absolute w-48 bg-white shadow-lg rounded-lg z-10"
+                  >
+                    <Button onPress={handleUpdateInfo} fullWidth style={{ color: 'black' }}>
+                      Cập nhật thông tin
+                    </Button>
+                    <Button onPress={handleBookingList} fullWidth style={{ color: 'black' }}>
+                      Booking đã gửi
+                    </Button>
+                    {user.role === 'lawyer' && (
+                      <Button onPress={handleAcceptedBookings} fullWidth style={{ color: 'black' }}>
+                        Booking đã nhận
+                      </Button>
+                    )}
+                    {user.role === 'lawyer' && (
+                      <Button onPress={detailLaywerInforMation} fullWidth style={{ color: 'black' }}>
+                        Cập nhật với vai trò luật sư
+                      </Button>
+                    )}
 
-export default Navbar;
+                    <Button onPress={handleLogout} fullWidth style={{ color: 'black' }}>
+                      Đăng xuất
+                    </Button>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div style={{ color: 'white', display: 'flex' }}>
+                <Link href="/login" className={styles.navLink}>
+                  Đăng nhập
+                </Link>
+                /
+                <Link href="/register" className={styles.navLink}>
+                  Đăng kí
+                </Link>
+              </div>
+            )}
+          </div>
+        </div>
+        {isChatOpen && (
+          <>
+            <SliderChatUser
+              onClose={closeChat}
+              onSelectConversation={(conversationId: string) => openChat(conversationId, '')}
+            />
+            {currentConversationId && currentLawyerId !== null && (
+              <UserChatLawyer id={currentConversationId} onClose={closeChat} />
+            )}
+          </>
+        )}
+      </nav>
+    );
+  };
+
+  export default Navbar;

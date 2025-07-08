@@ -1,13 +1,13 @@
-import AboutUs from '@/components/module/about'
 import Footer from '@/components/common/footer'
 import Navbar from '@/components/common/navbar'
+import NewsList from '@/components/module/newsPages/NewsPageIndex'
 import React from 'react'
 
-export default function page() {
+export default function NewsListPage() {
   return (
     <div>
       <Navbar/>
-      <AboutUs/>
+      <NewsList/>
       <Footer/>
     </div>
   )

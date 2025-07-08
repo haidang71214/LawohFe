@@ -8,6 +8,7 @@ import { ChatProvider } from "@/components/common/chatContext";
 import SocketProvider from "@/components/common/socketProvider";
 import VideoProvider from "@/components/common/videoProvider";
 import CallModalProvider from "@/components/common/CallModalProvider";
+import ModalNewsContext from "@/components/common/ModalNewsContext";
 const geistSans = Geist({
   variable: "--font-geist-sans",
   subsets: ["latin"],
@@ -42,7 +43,10 @@ export default function RootLayout({
     <SocketProvider>
   <VideoProvider>
     <CallModalProvider>
-    {children}
+      <ModalNewsContext>
+      {children}
+      </ModalNewsContext>
+    
     </CallModalProvider>
     </VideoProvider>
     </SocketProvider>

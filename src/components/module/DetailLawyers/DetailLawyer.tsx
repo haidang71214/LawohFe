@@ -572,7 +572,7 @@ export default function DetailLawyer({ id }: DetailLawyerProps) {
           paddingTop: 40,
           paddingBottom: 40,
           textAlign: 'center',
-          background: 'linear-gradient(135deg, #1E3A8A, #3B82F6)',
+          background: 'linear-gradient(180deg, rgb(45 48 58), rgb(124 130 138))',
           borderRadius: '15px',
           boxShadow: '0 4px 15px rgba(0, 0, 0, 0.2)',
           color: '#F9FAFB',
@@ -733,8 +733,8 @@ export default function DetailLawyer({ id }: DetailLawyerProps) {
         <div
           style={{
             flex: '0 0 280px',
-            background: 'linear-gradient(135deg, #1E3A8A, #3B82F6)',
-            borderRadius: '15px',
+            background: 'linear-gradient(135deg, rgb(161, 161, 161), rgb(69, 75, 85))',
+            borderRadius: '5px',
             padding: '30px',
             textAlign: 'center',
             color: '#F9FAFB',

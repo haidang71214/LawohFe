@@ -103,7 +103,7 @@
   background-position: top center;
   background-attachment: fixed;
   position: relative;
-  min-height: 100vh;
+  min-height: 70vh;
   display: flex;
   align-items: center;
   overflow: hidden;

@@ -186,7 +186,26 @@ const handleAcceptOrRejectVideo = async (videoId: string, action: 'accept' | 're
     });
   }
 };
-
+const handleDeleteVideo = async (id: string) => {
+  try {
+    const response = await axiosInstance.delete(`/video/${id}`);
+    if (response.status === 200) {
+      setVideos(prev => prev.filter(video => video._id !== id));
+      addToast({
+        title: 'Thành công',
+        description: 'Video đã được xóa thành công',
+        variant: 'solid',
+      });
+    }
+  } catch (error) {
+    console.error('Error deleting video:', error);
+    addToast({
+      title: 'Lỗi',
+      description: 'Không thể xóa video. Vui lòng thử lại sau.',
+      variant: 'solid',
+    });
+  }
+};
 
   const handleViewVideo = (video: Video) => {
     setSelectedVideo(video);
@@ -378,6 +397,11 @@ const handleAcceptOrRejectVideo = async (videoId: string, action: 'accept' | 're
                             </Button>
                           </>
                         )}
+                        <Button onClick={()=>{
+                          handleDeleteVideo(video._id)
+                        }}>
+                          Xóa
+                        </Button>
                       </div>
                     </TableCell>
                   </TableRow>
