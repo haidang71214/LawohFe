@@ -40,7 +40,7 @@ export default function SocketProvider({
     const newPeer = new Peer({
       host: 'lawohbe.onrender.com',
       port: 443,
-      path: '/',
+      path: '/peerjs',
       secure: true,
     });
     
