@@ -36,11 +36,11 @@ export default function SocketProvider({
     newSocket.on("connect_error", (error) => {
       console.log("SocketProvider connection error:", error);
     });
-    
+  // path ở dưới phải thay đổi theo cái này
     const newPeer = new Peer({
-      host: 'lawohbe.onrender.com', // ✅ KHÔNG có https://
+      host: 'lawohbe.onrender.com',
       port: 443,
-      path: '/',
+      path: '/peerjs',
       secure: true,
     });
     
