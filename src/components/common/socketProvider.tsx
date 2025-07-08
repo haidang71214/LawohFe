@@ -38,9 +38,9 @@ export default function SocketProvider({
     });
   // path ở dưới phải thay đổi theo cái này
     const newPeer = new Peer({
-      host: 'lawohbe.onrender.com',
+      host: '0.peerjs.com',
       port: 443,
-      path: '/peerjs',
+      path: '/',
       secure: true,
     });
     
