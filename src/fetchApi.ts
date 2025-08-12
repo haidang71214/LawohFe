@@ -4,7 +4,7 @@ import { LOGIN_USER } from "./constant/enum";
 // https://lawohbe.onrender.com
 // http://localhost:8080
 // http://localhost:8080
-export const BASE_URL = "http://103.57.223.234:4000"
+export const BASE_URL = "http://103.57.223.234:4001"
 // export const BASE_URL = "http://localhost:8080"
 //localhost
 // cấu hình mang tiếng là nâng cao, nhma mình sẽ tận dụng cái nâng cao này cho nó lỏ lỏ xíu 
