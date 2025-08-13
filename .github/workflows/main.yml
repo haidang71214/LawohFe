@@ -1,7 +1,7 @@
 name: Dockerized App Deployment
 on:
   push:
-    branches: [production]
+    branches: [master]
 jobs:
   deploy:
     runs-on: ubuntu-latest
