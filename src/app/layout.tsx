@@ -20,8 +20,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "LawOh - Tư vấn giải pháp luật",
-  description: "LawOh - Tư vấn giải pháp luật",
+  title: "LawOh",
+  description: "LawOh",
 };
 
 export default function RootLayout({
