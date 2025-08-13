@@ -16,8 +16,8 @@ jobs:
           script: |
             cd /root/lawohprojectFe/LawohFe
             git fetch origin
-            git checkout production
-            git pull origin production
+            git checkout master
+            git pull origin master
             docker build -t lawohfe .
             docker stop lawohfe-container || true
             docker rm lawohfe-container || true
