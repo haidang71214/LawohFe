@@ -1,6 +1,5 @@
 import React from 'react';
-import Navbar from '@/components/common/navbar';
-import Footer from '@/components/common/footer';
+
 import styles from './HomePage.module.css';
 
 import Services from '@/components/Services';
@@ -11,7 +10,7 @@ import LawyerRanking from '@/components/module/LawyerRanking/LawyerRanking';
 const HomePage = () => {
   return (
     <div className={styles.homePage}>
-      <Navbar />
+ 
       <header className={styles.header}>
         <div className={styles.headerContent}>
           <div className={styles.headerText}>
@@ -27,7 +26,7 @@ const HomePage = () => {
       <Services/>
       <FAQ/>
       <LawyerRanking/>
-      <Footer />
+
     </div>
   );
 };

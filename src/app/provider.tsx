@@ -20,9 +20,6 @@ export default function Providers({children} :any) {
     },
   }}
 />
-
-
-
       {children}
     </HeroUIProvider>
   )

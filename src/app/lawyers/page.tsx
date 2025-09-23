@@ -1,7 +1,5 @@
 // app/lawyers/[type]/page.tsx
 
-import Footer from '@/components/common/footer';
-import Navbar from '@/components/common/navbar';
 import ShittingFile from '@/components/module/lawyers/ShittingFile';
 import React from 'react';
 
@@ -17,9 +15,9 @@ export default function Page() {
 
   return (
     <div>
-      <Navbar/>
+  
       <ShittingFile/>
-      <Footer/>
+
     </div>
   );
 }

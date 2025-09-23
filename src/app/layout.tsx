@@ -1,3 +1,4 @@
+"use-client"
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 
@@ -9,6 +10,8 @@ import SocketProvider from "@/components/common/socketProvider";
 import VideoProvider from "@/components/common/videoProvider";
 import CallModalProvider from "@/components/common/CallModalProvider";
 import ModalNewsContext from "@/components/common/ModalNewsContext";
+import Navbar from "@/components/common/navbar";
+import Footer from "@/components/common/footer";
 const geistSans = Geist({
   variable: "--font-geist-sans",
   subsets: ["latin"],
@@ -44,7 +47,9 @@ export default function RootLayout({
   <VideoProvider>
     <CallModalProvider>
       <ModalNewsContext>
+         <Navbar/>
       {children}
+       <Footer/>
       </ModalNewsContext>
     
     </CallModalProvider>
