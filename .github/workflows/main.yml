@@ -14,13 +14,12 @@ jobs:
           password: ${{ secrets.PASSWORD }}
           port: 24700
           script: |
-            cd /root/lawohproject/lawohprojectFe/LawohFe
+            cd /root/lawohproject  
+            # đại khái là nó sẽ vô folder bằng lệnh này trước
             git fetch origin
             git checkout master
-            git pull origin master
-            docker build -t lawohfe .
-            docker stop lawohfe-container || true
-            docker rm lawohfe-container || true
-            docker run -d --name lawohfe-container -p 4001:3000 lawohfe
-            docker ps -a
-            docker images
+            docker-compose -f docker-compose.prod.yml down
+            docker container prune -f
+            docker image prune -f
+            docker-compose -f docker-compose.prod.yml up -d --build --force-recreate
+            docker-compose -f docker-compose.prod.yml logs --tail=20
