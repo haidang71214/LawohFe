@@ -18,7 +18,7 @@ jobs:
             # đại khái là nó sẽ vô folder bằng lệnh này trước
             git fetch origin
             git checkout master
-            sudo lsof -i :4000
+            sudo kill -9 $(sudo lsof -t -i :4000)
             cd ~/lawohproject && \
             docker compose -p docker-compose.yml down && \
             docker container prune -f && \
