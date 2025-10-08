@@ -14,7 +14,7 @@ jobs:
           password: ${{ secrets.PASSWORD }}
           port: 24700
           script: |
-            # nothing beat a yet 2 holiday 
+           
             cd /root/lawohproject
             # đại khái là nó sẽ vô folder bằng lệnh này trước
             git fetch origin
