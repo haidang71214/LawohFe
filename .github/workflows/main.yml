@@ -20,6 +20,7 @@ jobs:
             git fetch origin
             git checkout master
             sudo kill -9 $(sudo lsof -t -i :4000)
+            sudo kill -9 $(sudo lsof -t -i :80)
             cd ~/lawohproject && \
             docker compose -p docker-compose.yml down && \
             docker container prune -f && \
