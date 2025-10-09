@@ -41,7 +41,7 @@ export default function SocketProvider({
     const newPeer = new Peer({
       host: '0.peerjs.com',
       port: 443,
-      path: '/',
+      path: '/peerjs',
       secure: true,
     });
     
