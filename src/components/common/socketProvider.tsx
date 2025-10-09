@@ -26,7 +26,7 @@ export default function SocketProvider({
   useEffect(() => {
     const newSocket = io(BASE_URL, {
       transports: ["websocket", "polling"],
-      secure:true
+      secure:true 
     });
 
     newSocket.on("connect", () => {
@@ -41,7 +41,7 @@ export default function SocketProvider({
     const newPeer = new Peer({
       host: '0.peerjs.com',
       port: 443,
-      path: '/peerjs',
+      path: '/',
       secure: true,
     });
     
