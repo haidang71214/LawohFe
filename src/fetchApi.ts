@@ -5,7 +5,7 @@ import { LOGIN_USER } from "./constant/enum";
 // http://localhost:8080
 // http://localhost:8080
 // đang lắng nghe backend cổng 4000 nhưng khi production lại là 4001, nên backend chạy cors ở 4001 là push backend lên 4000
-export const BASE_URL = "http://103.57.223.234:4000"
+export const BASE_URL = "https://103.57.223.234:4000"
 // export const BASE_URL = "http://localhost:8080"
 
 export const axiosInstance = axios.create({
