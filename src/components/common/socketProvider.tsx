@@ -26,6 +26,7 @@ export default function SocketProvider({
   useEffect(() => {
     const newSocket = io(BASE_URL, {
       transports: ["websocket", "polling"],
+      secure:true
     });
 
     newSocket.on("connect", () => {
