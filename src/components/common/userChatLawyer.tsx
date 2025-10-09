@@ -57,6 +57,7 @@ export default function UserChatLawyer({ id, onClose }: UserChatLawyerProps) {
 // 8080
       const newSocket = io(BASE_URL, {
         transports: ['websocket', 'polling'],
+        secure:true
       });
       setSocket(newSocket);
       newSocket.emit('joinRoom', id);
