@@ -1,6 +1,6 @@
 'use client';
 import { USER_PROFILE } from '@/constant/enum';
-import { BASE_URL } from '@/fetchApi';
+import { BASE_URL, URL_SOCKET } from '@/fetchApi';
 import { addToast } from '@heroui/toast';
 import axios from 'axios';
 import React, { useEffect, useRef, useState } from 'react';
@@ -55,7 +55,7 @@ export default function UserChatLawyer({ id, onClose }: UserChatLawyerProps) {
       }
       setUserId(currentUserId);
 // 8080
-      const newSocket = io(BASE_URL, {
+      const newSocket = io(URL_SOCKET, {
         transports: ['websocket', 'polling'],
         secure:true
       });

@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { io, Socket } from "socket.io-client";
-import { BASE_URL } from "@/fetchApi";
+import { URL_SOCKET } from "@/fetchApi";
 import { createContext } from "react";
 import Peer  from "peerjs";
 // { DataConnection, MediaConnection }
@@ -24,7 +24,7 @@ export default function SocketProvider({
   const [peerId, setPeerId] = useState<string>();
   const [joined, setJoined] = useState<boolean>(false);
   useEffect(() => {
-    const newSocket = io(BASE_URL, {
+    const newSocket = io(URL_SOCKET, {
       transports: ["websocket", "polling"],
       secure:true 
     });
