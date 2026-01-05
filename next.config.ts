@@ -10,6 +10,20 @@ const nextConfig: NextConfig = {
       },
     ],
   },
+  async redirects() {
+    return [
+      {
+        source: '/news/:id',
+        destination: '/newsDetail/:id',
+        permanent: false,
+      },
+      {
+        source: '/news',
+        destination: '/newsPage',
+        permanent: false,
+      },
+    ];
+  },
 };
 
 export default nextConfig;
