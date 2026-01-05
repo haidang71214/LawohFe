@@ -1,0 +1,7 @@
+# Python requirements for OmniVoice TTS Microservice
+fastapi>=0.110.0
+uvicorn[standard]>=0.28.0
+pydantic>=2.0.0
+torch>=2.1.0
+torchaudio>=2.1.0
+omnivoice>=0.1.0
