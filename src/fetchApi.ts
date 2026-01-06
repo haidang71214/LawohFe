@@ -1,13 +1,9 @@
 import axios from "axios";
-import { LOGIN_USER } from "./constant/enum";
+import { LOGIN_USER } from "./constants/enum";
+import { notifyRateLimit } from "@/utils/rateLimitToast";
 
-// https://lawohbe.onrender.com
-// http://localhost:8080
-// http://localhost:8080
-// đang lắng nghe backend cổng 4000 nhưng khi production lại là 4001, nên backend chạy cors ở 4001 là push backend lên 4000
-export const BASE_URL = "https://www.lawoh.click/api/"
-// export const BASE_URL = "http://localhost:8080"
-export const URL_SOCKET = "https://www.lawoh.click/socket.io/"
+export const BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3300/api/v1";
+export const URL_SOCKET = process.env.NEXT_PUBLIC_SOCKET_URL || "http://localhost:3300";
 export const axiosInstance = axios.create({
    baseURL: `${BASE_URL}`,
 });
@@ -28,20 +24,25 @@ axiosInstance.interceptors.request.use(
 const extendToken = async () => {
    try {
       const { data } = await axiosInstance.post(
-         `/auth/extend-token`,
+         `/auth/refresh-token`,
          {},
          { withCredentials: true }
       );
-      return data?.newAccessToken; // Return the new access token
-   } catch{
+      return data?.data?.accessToken || data?.accessToken || data?.newAccessToken;
+   } catch {
    
    }
 };
 
-// Add a response interceptor to handle token renewal on 401 responses
+// Add a response interceptor to handle token renewal on 401 responses and rate limiting on 429
 axiosInstance.interceptors.response.use(
    (response) => response, // Pass successful responses through
    async (error) => {
+      // Global HTTP 429 Rate Limit toast handling
+      if (error.response?.status === 429) {
+         notifyRateLimit(error.response?.data);
+      }
+
       const originalRequest = error.config;
       if (error.response?.status === 401 && !originalRequest._retry) {
          originalRequest._retry = true; // Avoid infinite retries
