@@ -1,5 +1,5 @@
 'use client';
-import { USER_PROFILE } from '@/constant/enum';
+import { USER_PROFILE } from '@/constants/enum';
 import { BASE_URL, URL_SOCKET } from '@/fetchApi';
 import { addToast } from '@heroui/toast';
 import axios from 'axios';
@@ -42,7 +42,7 @@ export default function UserChatLawyer({ id, onClose }: UserChatLawyerProps) {
     const userProfileRaw = localStorage.getItem(USER_PROFILE);
     if (!userProfileRaw) {
       console.error('USER_PROFILE not found in localStorage');
-      alert('Please log in to continue chatting.');
+      addToast({ title: 'Vui lòng đăng nhập để tiếp tục trò chuyện.', color: 'warning' });
       return;
     }
 
@@ -55,9 +55,11 @@ export default function UserChatLawyer({ id, onClose }: UserChatLawyerProps) {
       }
       setUserId(currentUserId);
 // 8080
-      const newSocket = io(URL_SOCKET, {
-        transports: ['websocket', 'polling'],
-        secure:true
+      const targetUrl = URL_SOCKET || 'http://localhost:3300';
+      const isSecure = targetUrl.startsWith('https');
+      const newSocket = io(targetUrl, {
+        transports: ['polling'],
+        secure: isSecure,
       });
       setSocket(newSocket);
       newSocket.emit('joinRoom', id);
@@ -105,7 +107,7 @@ export default function UserChatLawyer({ id, onClose }: UserChatLawyerProps) {
       };
     } catch (error) {
       console.error('Error parsing USER_PROFILE:', error);
-      alert('Failed to load user profile. Please log in again.');
+      addToast({ title: 'Lỗi thông tin người dùng. Vui lòng đăng nhập lại.', color: 'danger' });
     }
   }, [id]);
 

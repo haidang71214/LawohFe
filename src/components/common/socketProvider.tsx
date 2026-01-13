@@ -1,90 +1,91 @@
-"use client";
+'use client';
 
-import { useEffect, useState } from "react";
-import { io, Socket } from "socket.io-client";
-import { URL_SOCKET } from "@/fetchApi";
-import { createContext } from "react";
-import Peer  from "peerjs";
-// { DataConnection, MediaConnection }
+import React, { createContext, useEffect, useState } from 'react';
+import { io, Socket } from 'socket.io-client';
+import { URL_SOCKET } from '@/fetchApi';
+
+import { useGetMeQuery } from '@/store/queries/auth';
+import webStorageClient from '@/utils/webStorageClient';
+
 export const SocketContext = createContext<{
   socket: Socket | undefined;
-  peer: Peer | undefined;
-  peerId: string | undefined;
+  isConnected: boolean;
 }>({
   socket: undefined,
-  peer: undefined,
-  peerId: undefined,
+  isConnected: false,
 });
 
 export default function SocketProvider({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
   const [socket, setSocket] = useState<Socket>();
-  const [peer, setPeer] = useState<Peer>();
-  const [peerId, setPeerId] = useState<string>();
-  const [joined, setJoined] = useState<boolean>(false);
+  const [isConnected, setIsConnected] = useState<boolean>(false);
+  const { data: meResponse } = useGetMeQuery();
+  const currentUser: any = meResponse?.data || null;
+
+  const getUserId = () => {
+    if (currentUser?._id || currentUser?.id) return currentUser._id || currentUser.id;
+    try {
+      const u = webStorageClient.getUser();
+      return u?._id || u?.id || '';
+    } catch {}
+    return '';
+  };
+
+  const currentUserId = getUserId();
+
   useEffect(() => {
-    const newSocket = io(URL_SOCKET, {
-      transports: ["websocket", "polling"],
-      secure:true 
+    const targetUrl = URL_SOCKET || 'http://localhost:3300';
+    const isSecure = targetUrl.startsWith('https');
+    const newSocket = io(targetUrl, {
+      transports: ['polling'],
+      secure: isSecure,
+      reconnectionAttempts: 5,
+      timeout: 10000,
+      auth: {
+        userId: currentUserId,
+      },
+      query: {
+        userId: currentUserId,
+      },
     });
 
-    newSocket.on("connect", () => {
-      console.log("SocketProvider connected:", newSocket.connected);
+    newSocket.on('connect', () => {
       setSocket(newSocket);
+      setIsConnected(true);
+      newSocket.emit('join-dashboard');
+      if (currentUserId) {
+        newSocket.emit('userLogin', currentUserId);
+      }
     });
 
-    newSocket.on("connect_error", (error) => {
-      console.log("SocketProvider connection error:", error);
-    });
-  // path ở dưới phải thay đổi theo cái này
-    const newPeer = new Peer({
-      host: '0.peerjs.com',
-      port: 443,
-      path: '/',
-      secure: true,
-    });
-    
-
-
-    // Lắng nghe sự kiện khi PeerJS mở và nhận Peer ID
-    newPeer.on("open", (id) => {
-      console.log("PeerJS opened with ID:", id);
-      setPeer(newPeer);
-      setPeerId(id);
+    newSocket.on('dashboard-joined', () => {
+      setIsConnected(true);
     });
 
-    newPeer.on("error", (err) => {
-      console.error("PeerJS error:", err);
+    newSocket.on('connect_error', (error) => {
+      console.warn('Socket connection error:', error.message);
     });
 
-    // Cleanup khi component unmount
+    newSocket.on('disconnect', () => {
+      setIsConnected(false);
+    });
+
     return () => {
       newSocket.disconnect();
-      newPeer.destroy();
-      console.log("SocketProvider and PeerJS disconnected");
     };
   }, []);
 
-  // Join dashboard
+  // When currentUserId changes, emit userLogin
   useEffect(() => {
-    if (socket) {
-      socket.on("dashboard-joined", () => {
-        setJoined(true);
-        console.log("Joined dashboard!");
-      });
-
-      socket.emit("join-dashboard");
-
-      return () => {
-        socket.off("dashboard-joined");
-      };
+    if (socket && socket.connected && currentUserId) {
+      socket.emit('userLogin', currentUserId);
     }
-  }, [socket]);
+  }, [socket, currentUserId]);
 
   return (
-    <SocketContext.Provider value={{ socket, peer, peerId }}>
-      {joined ? children : <p>Đang kết nối...</p>}
+    <SocketContext.Provider value={{ socket, isConnected }}>
+      {children}
     </SocketContext.Provider>
   );
 }

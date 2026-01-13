@@ -25,8 +25,8 @@ export default function VideoProvider({ children }: { children: React.ReactNode 
   const [isReject, setIsReject] = useState(false);
   const [isCalling, setIsCalling] = useState(false);
   const [roomId, setRoomId] = useState("");
-  const { socket, peer, peerId } = useContext(SocketContext)!;
   const [localStream, setLocalStream] = useState<MediaStream | null>(null);
+  const { socket, peer, peerId } = (useContext(SocketContext) || {}) as any;
   const [remoteStream, setRemoteStream] = useState<MediaStream | null>(null);
   const currentCall = useRef<MediaConnection | null>(null);
   const mediaStreamRef = useRef<MediaStream | null>(null);
@@ -172,7 +172,7 @@ export default function VideoProvider({ children }: { children: React.ReactNode 
       const call = peer.call(remotePeerId, stream);
       currentCall.current = call;
 
-      call.on("stream", (remoteStream) => {
+      call.on("stream", (remoteStream: MediaStream) => {
         console.log("Nhận remote stream, tracks:", remoteStream.getTracks());
         if (remoteStream.getAudioTracks().length === 0) {
           console.error("Remote stream không có track audio");
@@ -180,7 +180,7 @@ export default function VideoProvider({ children }: { children: React.ReactNode 
         setRemoteStream(remoteStream);
       });
 
-      call.on("error", (err) => {
+      call.on("error", (err: any) => {
         console.error("Lỗi cuộc gọi:", err);
         addToast({
           title: "Lỗi cuộc gọi",
