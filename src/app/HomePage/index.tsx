@@ -1,33 +1,31 @@
+'use client';
+
 import React from 'react';
-
-import styles from './HomePage.module.css';
-
+import Hero from '@/components/module/hero/Hero';
 import Services from '@/components/Services';
-import Hero from '@/components/module/Hero/Hero';
-import FAQ from '@/components/module/FAQ/FAQ';
-import LawyerRanking from '@/components/module/LawyerRanking/LawyerRanking';
+import HomeVideoSection from '@/components/module/home/HomeVideoSection';
+import LawyerRanking from '@/components/module/lawyerRanking/LawyerRanking';
+import Blog from '@/components/module/blog/Blog';
 
 const HomePage = () => {
   return (
-    <div className={styles.homePage}>
- 
-      <header className={styles.header}>
-        <div className={styles.headerContent}>
-          <div className={styles.headerText}>
-            <h1 className={styles.headerHeading}>Stress Less, Find the best!</h1>
-            <p className={styles.headerDescription}>Tư vấn pháp lý, tìm kiếm luật sư theo mong muốn của bạn, cung cấp mẫu đơn từ và khóa học luật - tất cả trong tầm tay bạn.</p>
-          </div>
-          <div className={styles.actions}>
-            <button className={styles.actionButton}>Bạn gặp vấn đề gì ?</button>
-          </div>
-        </div>
-      </header>
-      <Hero/>
-      <Services/>
-      <FAQ/>
-      <LawyerRanking/>
+    <main className="min-h-screen bg-[#faf7f2] dark:bg-[#131210] text-stone-900 dark:text-[#f4efe6] flex flex-col font-sans relative overflow-x-hidden selection:bg-[#d95327] selection:text-white transition-colors duration-300">
+      {/* Retro Paper Texture Overlay */}
+      <div
+        className="fixed inset-0 pointer-events-none opacity-[0.035] dark:opacity-[0.05] z-[9999]"
+        style={{
+          backgroundImage: `radial-gradient(circle at 1px 1px, currentColor 1px, transparent 0)`,
+          backgroundSize: '24px 24px',
+        }}
+        aria-hidden="true"
+      />
 
-    </div>
+      <Hero />
+      <Services />
+      <HomeVideoSection />
+      <LawyerRanking />
+      <Blog />
+    </main>
   );
 };
 
