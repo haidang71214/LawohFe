@@ -1,314 +1,524 @@
 'use client';
-import React, { useState } from 'react';
-import { axiosInstance } from '@/fetchApi';
+
+import React, { useState, useEffect } from 'react';
+import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import {
+  Scale,
+  User,
+  Mail,
+  Lock,
+  Phone,
+  Calendar,
+  MapPin,
+  Upload,
+  ArrowRight,
+  ShieldCheck,
+  KeyRound,
+  RotateCw,
+  CheckCircle2,
+  Eye,
+  EyeOff,
+  Stamp,
+} from 'lucide-react';
 import { addToast } from '@heroui/toast';
+import {
+  useRegisterMutation,
+  useVerifyEmailMutation,
+  useResendVerificationMutation,
+} from '@/store/queries/auth';
+import { useProvinces } from '@/lib/useProvinces';
 
 export default function RegisterIndex() {
+  const { provinces } = useProvinces();
+  const [step, setStep] = useState<'REGISTER' | 'VERIFY'>('REGISTER');
+
+  // Form states
   const [email, setEmail] = useState('');
   const [userName, setUserName] = useState('');
   const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [phone, setPhone] = useState('');
   const [age, setAge] = useState('');
   const [province, setProvince] = useState('');
-  const [img, setImg] = useState<File | null>(null); // Để lưu file hình ảnh
-  const [loading, setLoading] = useState(false);
+  const [img, setImg] = useState<File | null>(null);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+
+  // OTP Verification states
+  const [otpToken, setOtpToken] = useState('');
+  const [countdown, setCountdown] = useState(60);
+  const [canResend, setCanResend] = useState(false);
+
+  const [register, { isLoading: isRegistering }] = useRegisterMutation();
+  const [verifyEmail, { isLoading: isVerifying }] = useVerifyEmailMutation();
+  const [resendVerification, { isLoading: isResending }] = useResendVerificationMutation();
+
+  const router = useRouter();
+
+  // Countdown timer for OTP resend
+  useEffect(() => {
+    let timer: any;
+    if (step === 'VERIFY' && countdown > 0) {
+      timer = setInterval(() => {
+        setCountdown((prev) => prev - 1);
+      }, 1000);
+    } else if (countdown === 0) {
+      setCanResend(true);
+    }
+    return () => clearInterval(timer);
+  }, [step, countdown]);
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
-      setImg(e.target.files[0]);
+      const file = e.target.files[0];
+      setImg(file);
+      setPreviewUrl(URL.createObjectURL(file));
     }
   };
 
-  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+  const handleRegisterSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    setLoading(true);
-  
+
+    if (password !== confirmPassword) {
+      addToast({
+        title: 'Mật khẩu không khớp',
+        description: 'Mật khẩu xác nhận phải trùng khớp với mật khẩu đã nhập.',
+        variant: 'solid',
+      });
+      return;
+    }
+
+    if (password.length < 6) {
+      addToast({
+        title: 'Mật khẩu quá ngắn',
+        description: 'Mật khẩu phải có độ dài tối thiểu 6 ký tự.',
+        variant: 'solid',
+      });
+      return;
+    }
+
     try {
       const formData = new FormData();
-      formData.append('email', email);
+      formData.append('email', email.trim());
       formData.append('password', password);
-      formData.append('phone', phone);
-      formData.append('name', userName);
+      formData.append('name', userName.trim());
+      if (phone && phone.trim()) formData.append('phone', phone.trim());
       if (img) formData.append('img', img);
-      formData.append('age', age);
-      formData.append('province', province);  
-      const response = await axiosInstance.post('/auth/register', formData, {
-        headers: { 'Authorization': null }, // Bỏ qua token cho đăng ký
-      });
-      console.log('Đăng ký thành công:', response.data);
+      if (age) formData.append('age', String(age).trim());
+      if (province) formData.append('province', province.trim());
+
+      await register(formData).unwrap();
+
       addToast({
-        title: 'Thành công',
-        description: 'Đăng ký tài khoản thành công!',
-        color: 'success',
-        variant: 'flat',
-        timeout: 4000,
+        title: 'Đăng ký bước 1 thành công',
+        description: 'Vui lòng kiểm tra hộp thư email để lấy mã OTP xác thực tài khoản.',
+        variant: 'solid',
       });
-  
-      setEmail(''); setUserName(''); setPassword(''); setPhone('');
-      setAge(''); setProvince(''); setImg(null);
-    } catch (err : any) {
-      console.error('Lỗi đăng ký chi tiết:', {
-        message: err.message,
-        response: err.response ? err.response.data : 'No response',
-        status: err.response ? err.response.status : 'No status',
+
+      setStep('VERIFY');
+      setCountdown(60);
+      setCanResend(false);
+    } catch (err: any) {
+      addToast({
+        title: 'Đăng ký thất bại',
+        description: err?.data?.message || err?.message || 'Vui lòng kiểm tra lại thông tin.',
+        variant: 'solid',
       });
+    }
+  };
+
+  const handleVerifySubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+
+    if (!otpToken.trim()) {
       addToast({
         title: 'Lỗi',
-        description: err.response ? err.response.data.message : 'Đã xảy ra lỗi không xác định',
-        color: 'danger',
-        variant: 'flat',
-        timeout: 4000,
+        description: 'Vui lòng nhập mã OTP xác thực',
+        variant: 'solid',
       });
-    } finally {
-      setLoading(false);
+      return;
+    }
+
+    try {
+      await verifyEmail({
+        email: email.trim(),
+        token: otpToken.trim(),
+      }).unwrap();
+
+      addToast({
+        title: 'Kích hoạt tài khoản thành công',
+        description: 'Tài khoản của bạn đã sẵn sàng. Đang chuyển hướng tới trang Đăng nhập...',
+        variant: 'solid',
+      });
+
+      setTimeout(() => {
+        router.push('/login');
+      }, 1000);
+    } catch (err: any) {
+      addToast({
+        title: 'Xác thực thất bại',
+        description: err?.data?.message || err?.message || 'Mã OTP không chính xác hoặc đã hết hạn',
+        variant: 'solid',
+      });
+    }
+  };
+
+  const handleResendOtp = async () => {
+    if (!canResend || isResending) return;
+
+    try {
+      await resendVerification({ email: email.trim() }).unwrap();
+      addToast({
+        title: 'Đã gửi lại mã OTP',
+        description: 'Mã xác thực mới đã được gửi tới email của bạn.',
+        variant: 'solid',
+      });
+      setCountdown(60);
+      setCanResend(false);
+    } catch (err: any) {
+      addToast({
+        title: 'Gửi lại thất bại',
+        description: err?.data?.message || err?.message || 'Không thể gửi lại mã vào lúc này',
+        variant: 'solid',
+      });
     }
   };
 
   return (
-    <div className="flex bg-gray-100" style={{maxHeight:'10000px'}}>
-      {/* Form bên trái */}
-      <div className="w-full md:w-1/2 flex items-center justify-center  bg-pink-50"  style={{height:'950px'}}>
-        <form onSubmit={handleSubmit} className="w-full max-w-sm" >
-          <h2 className="text-2xl font-bold">Đăng Ký</h2>
-          <p>
-            Nếu bạn đã có tài khoản hãy đăng nhập{' '}
-            <a href="/login" className="text-blue-600 font-semibold">
-              ở đây
-            </a>
-            !
+    <div className="min-h-screen bg-[#faf7f2] dark:bg-[#161111] text-stone-900 dark:text-stone-100 flex flex-col justify-center items-center px-4 py-12 font-sans transition-colors duration-200">
+      <div className="relative w-full max-w-xl space-y-6">
+        {/* Brand Header */}
+        <div className="text-center space-y-2">
+          <Link href="/" className="inline-flex items-center gap-2 group mb-1">
+            <div className="w-9 h-9 border-2 border-stone-800 dark:border-[#e85d46] bg-[#b33927] dark:bg-[#e85d46] text-white dark:text-stone-950 flex items-center justify-center shadow-[3px_3px_0px_#40130d]">
+              <Scale className="w-5 h-5" />
+            </div>
+            <span className="font-serif font-black text-xl tracking-tight text-stone-900 dark:text-stone-50">
+              LawOh LegalTech
+            </span>
+          </Link>
+
+          <div className="flex items-center justify-center gap-1.5 font-mono text-[10px] uppercase tracking-wider text-[#b33927] dark:text-[#e85d46] font-bold">
+            <Stamp className="w-3.5 h-3.5" />
+            <span>ĐĂNG KÝ HỒ SƠ DÂN SỰ & PHÁP NHÂN</span>
+          </div>
+
+          <h1 className="text-2xl sm:text-3xl font-serif font-black tracking-tight text-stone-900 dark:text-stone-50">
+            {step === 'REGISTER' ? 'Kê Khai Tạo Tài Khoản' : 'Xác Thực Danh Tính Email'}
+          </h1>
+          <p className="text-xs text-stone-600 dark:text-stone-400">
+            {step === 'REGISTER' ? (
+              <>
+                Đã có tài khoản đã xác thực?{' '}
+                <Link href="/login" className="text-[#b33927] dark:text-[#e85d46] font-mono font-bold uppercase underline underline-offset-2">
+                  Đăng nhập ngay
+                </Link>
+              </>
+            ) : (
+              `Mã bảo mật OTP 6 chữ số đã được gửi tới hòm thư ${email}`
+            )}
           </p>
+        </div>
 
-          {/* Tên người dùng */}
-          <div>
-            <label className="block text-sm font-medium">Tên Người Dùng</label>
-            <div className="flex items-center border-b border-gray-400 py-2">
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                viewBox="0 0 24 24"
-                strokeWidth={1}
-                stroke="currentColor"
-                fill="none"
-                className="w-6 h-6 mr-2"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M15.75 6.75a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0ZM4.501 19.5a8.999 8.999 0 0 1 14.998 0"
-                />
-              </svg>
-              <input
-                type="text"
-                placeholder="Điền tên người dùng"
-                className="w-full bg-transparent focus:outline-none"
-                value={userName}
-                onChange={(e) => setUserName(e.target.value)}
-                required
-                style={{ padding: '15px' }}
-              />
-            </div>
+        {/* Notary Docket Card */}
+        <div className="border-2 border-stone-800 dark:border-[#b33927] bg-white dark:bg-[#1e1515] p-6 sm:p-8 shadow-[6px_6px_0px_#b33927] dark:shadow-[6px_6px_0px_#e85d46] space-y-6">
+          <div className="flex items-center justify-between border-b-2 border-dashed border-stone-300 dark:border-stone-700 pb-3 font-mono text-[10px] uppercase text-stone-500">
+            <span>[DOCKET: REG-FORM-2026]</span>
+            <span className="text-[#b33927] dark:text-[#e85d46] font-bold">OFFICIAL REGISTRY</span>
           </div>
 
-          {/* Email */}
-          <div>
-            <label className="block text-sm font-medium">Email</label>
-            <div className="flex items-center border-b border-gray-400 py-2">
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                fill="none"
-                viewBox="0 0 24 24"
-                strokeWidth={0.7}
-                stroke="currentColor"
-                className="w-6 h-6 mr-2"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M21.75 6.75v10.5a2.25 2.25 0 0 1-2.25 2.25h-15a2.25 2.25 0 0 1-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0 0 19.5 4.5h-15a2.25 2.25 0 0 0-2.25 2.25m19.5 0v.243a2.25 2.25 0 0 1-1.07 1.916l-7.5 4.615a2.25 2.25 0 0 1-2.36 0L3.32 8.91a2.25 2.25 0 0 1-1.07-1.916V6.75"
-                />
-              </svg>
-              <input
-                type="email"
-                placeholder="Điền Email của bạn"
-                className="w-full bg-transparent focus:outline-none"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
-                style={{ padding: '15px' }}
-              />
-            </div>
-          </div>
+          {step === 'REGISTER' ? (
+            /* STEP 1: REGISTRATION FORM */
+            <form onSubmit={handleRegisterSubmit} className="space-y-4 text-xs">
+              {/* Row 1: Name & Email */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="space-y-1.5">
+                  <label className="text-[11px] font-mono font-bold uppercase text-stone-700 dark:text-stone-300 flex items-center gap-1.5">
+                    <User className="w-3.5 h-3.5 text-stone-400" />
+                    Họ và tên *
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={userName}
+                    onChange={(e) => setUserName(e.target.value)}
+                    placeholder="Nguyễn Văn A"
+                    className="w-full px-3 py-2 border-2 border-stone-800 dark:border-stone-700 bg-stone-50 dark:bg-[#140e0e] text-stone-900 dark:text-stone-100 font-sans focus:outline-none focus:border-[#b33927] dark:focus:border-[#e85d46]"
+                  />
+                </div>
 
-          {/* Mật khẩu */}
-          <div>
-            <label className="block text-sm font-medium">Mật Khẩu</label>
-            <div className="flex items-center border-b border-gray-400 py-2">
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                fill="none"
-                viewBox="0 0 24 24"
-                strokeWidth={0.7}
-                stroke="currentColor"
-                className="w-6 h-6 mr-2"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M16.5 10.5V6.75a4.5 4.5 0 1 0-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 0 0 2.25-2.25v-6.75a2.25 2.25 0 0 0-2.25-2.25H6.75a2.25 2.25 0 0 0-2.25 2.25v6.75a2.25 2.25 0 0 0 2.25 2.25Z"
-                />
-              </svg>
-              <input
-                type="password"
-                placeholder="Điền mật khẩu của bạn"
-                className="w-full bg-transparent focus:outline-none"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-                style={{ padding: '15px' }}
-              />
-            </div>
-          </div>
+                <div className="space-y-1.5">
+                  <label className="text-[11px] font-mono font-bold uppercase text-stone-700 dark:text-stone-300 flex items-center gap-1.5">
+                    <Mail className="w-3.5 h-3.5 text-stone-400" />
+                    Thư điện tử *
+                  </label>
+                  <input
+                    type="email"
+                    required
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder="name@domain.com"
+                    className="w-full px-3 py-2 border-2 border-stone-800 dark:border-stone-700 bg-stone-50 dark:bg-[#140e0e] text-stone-900 dark:text-stone-100 font-sans focus:outline-none focus:border-[#b33927] dark:focus:border-[#e85d46]"
+                  />
+                </div>
+              </div>
 
-          {/* Số điện thoại */}
-          <div>
-            <label className="block text-sm font-medium">Số Điện Thoại</label>
-            <div className="flex items-center border-b border-gray-400 py-2">
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                fill="none"
-                viewBox="0 0 24 24"
-                strokeWidth={0.7}
-                stroke="currentColor"
-                className="w-6 h-6 mr-2"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M2.25 6.75c0-2.485 2.015-4.5 4.5-4.5h10.5c2.485 0 4.5 2.015 4.5 4.5v10.5c0 2.485-2.015 4.5-4.5 4.5H6.75c-2.485 0-4.5-2.015-4.5-4.5V6.75Zm14.25 12.75a3.75 3.75 0 1 0 0-7.5 3.75 3.75 0 0 0 0 7.5Z"
-                />
-              </svg>
-              <input
-                type="tel"
-                placeholder="Điền số điện thoại"
-                className="w-full bg-transparent focus:outline-none"
-                value={phone}
-                onChange={(e) => setPhone(e.target.value)}
-                required
-                style={{ padding: '15px' }}
-              />
-            </div>
-          </div>
+              {/* Row 2: Password & Confirm Password */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="space-y-1.5">
+                  <label className="text-[11px] font-mono font-bold uppercase text-stone-700 dark:text-stone-300 flex items-center gap-1.5">
+                    <Lock className="w-3.5 h-3.5 text-stone-400" />
+                    Mật khẩu *
+                  </label>
+                  <div className="relative">
+                    <input
+                      type={showPassword ? 'text' : 'password'}
+                      required
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      placeholder="Tối thiểu 6 ký tự"
+                      className="w-full pl-3 pr-9 py-2 border-2 border-stone-800 dark:border-stone-700 bg-stone-50 dark:bg-[#140e0e] text-stone-900 dark:text-stone-100 font-sans focus:outline-none focus:border-[#b33927] dark:focus:border-[#e85d46]"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute right-2.5 top-1/2 -translate-y-1/2 text-stone-400 hover:text-stone-700"
+                      tabIndex={-1}
+                    >
+                      {showPassword ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+                    </button>
+                  </div>
+                </div>
 
-          {/* Tuổi */}
-          <div>
-            <label className="block text-sm font-medium">Tuổi</label>
-            <div className="flex items-center border-b border-gray-400 py-2">
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                fill="none"
-                viewBox="0 0 24 24"
-                strokeWidth={0.7}
-                stroke="currentColor"
-                className="w-6 h-6 mr-2"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M12 9v6m3-3H9m12 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z"
-                />
-              </svg>
-              <input
-                type="number"
-                placeholder="Điền tuổi của bạn"
-                className="w-full bg-transparent focus:outline-none"
-                value={age}
-                onChange={(e) => setAge(e.target.value)}
-                required
-                min="0"
-                style={{ padding: '15px' }}
-              />
-            </div>
-          </div>
+                <div className="space-y-1.5">
+                  <label className="text-[11px] font-mono font-bold uppercase text-stone-700 dark:text-stone-300 flex items-center gap-1.5">
+                    <Lock className="w-3.5 h-3.5 text-stone-400" />
+                    Xác nhận Mật khẩu *
+                  </label>
+                  <div className="relative">
+                    <input
+                      type={showConfirmPassword ? 'text' : 'password'}
+                      required
+                      value={confirmPassword}
+                      onChange={(e) => setConfirmPassword(e.target.value)}
+                      placeholder="Nhập lại mật khẩu"
+                      className="w-full pl-3 pr-9 py-2 border-2 border-stone-800 dark:border-stone-700 bg-stone-50 dark:bg-[#140e0e] text-stone-900 dark:text-stone-100 font-sans focus:outline-none focus:border-[#b33927] dark:focus:border-[#e85d46]"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                      className="absolute right-2.5 top-1/2 -translate-y-1/2 text-stone-400 hover:text-stone-700"
+                      tabIndex={-1}
+                    >
+                      {showConfirmPassword ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+                    </button>
+                  </div>
+                </div>
+              </div>
 
-          {/* Tỉnh/Thành */}
-          <div>
-            <label className="block text-sm font-medium">Tỉnh/Thành</label>
-            <div className="flex items-center border-b border-gray-400 py-2">
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                fill="none"
-                viewBox="0 0 24 24"
-                strokeWidth={0.7}
-                stroke="currentColor"
-                className="w-6 h-6 mr-2"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M15 10.5a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z"
-                />
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1 1 15 0Z"
-                />
-              </svg>
-              <input
-                type="text"
-                placeholder="Điền tỉnh/thành của bạn"
-                className="w-full bg-transparent focus:outline-none"
-                value={province}
-                onChange={(e) => setProvince(e.target.value)}
-                required
-                style={{ padding: '15px' }}
-              />
-            </div>
-          </div>
+              {/* Row 3: Phone & Age */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="space-y-1.5">
+                  <label className="text-[11px] font-mono font-bold uppercase text-stone-700 dark:text-stone-300 flex items-center gap-1.5">
+                    <Phone className="w-3.5 h-3.5 text-stone-400" />
+                    Số điện thoại
+                  </label>
+                  <input
+                    type="tel"
+                    value={phone}
+                    onChange={(e) => setPhone(e.target.value)}
+                    placeholder="0912 345 678"
+                    className="w-full px-3 py-2 border-2 border-stone-800 dark:border-stone-700 bg-stone-50 dark:bg-[#140e0e] text-stone-900 dark:text-stone-100 font-sans focus:outline-none focus:border-[#b33927] dark:focus:border-[#e85d46]"
+                  />
+                </div>
 
-          {/* Hình ảnh (tùy chọn) */}
-          <div>
-            <label className="block text-sm font-medium">Hình Ảnh Đại Diện (Tùy Chọn)</label>
-            <div className="flex items-center border-b border-gray-400 py-2">
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                fill="none"
-                viewBox="0 0 24 24"
-                strokeWidth={0.7}
-                stroke="currentColor"
-                className="w-6 h-6 mr-2"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5m-13.5-9L12 3m0 0 4.5 4.5M12 3v13.5"
-                />
-              </svg>
-              <input
-                type="file"
-                accept="image/*"
-                className="w-full bg-transparent focus:outline-none"
-                onChange={handleImageChange}
-                style={{ padding: '15px' }}
-              />
-            </div>
-          </div>
+                <div className="space-y-1.5">
+                  <label className="text-[11px] font-mono font-bold uppercase text-stone-700 dark:text-stone-300 flex items-center gap-1.5">
+                    <Calendar className="w-3.5 h-3.5 text-stone-400" />
+                    Độ tuổi *
+                  </label>
+                  <input
+                    type="number"
+                    min="16"
+                    max="100"
+                    required
+                    value={age}
+                    onChange={(e) => setAge(e.target.value)}
+                    placeholder="28"
+                    className="w-full px-3 py-2 border-2 border-stone-800 dark:border-stone-700 bg-stone-50 dark:bg-[#140e0e] text-stone-900 dark:text-stone-100 font-sans focus:outline-none focus:border-[#b33927] dark:focus:border-[#e85d46]"
+                  />
+                </div>
+              </div>
 
-          <button
-            type="submit"
-            className="w-full py-2 border border-black rounded hover:bg-black hover:text-white transition"
-            disabled={loading}
-          >
-            {loading ? 'Đang Đăng Ký...' : 'Đăng Ký'}
-          </button>
-        </form>
+              {/* Row 4: Province */}
+              <div className="space-y-1.5">
+                <label className="text-[11px] font-mono font-bold uppercase text-stone-700 dark:text-stone-300 flex items-center gap-1.5">
+                  <MapPin className="w-3.5 h-3.5 text-stone-400" />
+                  Tỉnh / Thành phố Thường trú *
+                </label>
+                <select
+                  required
+                  value={province}
+                  onChange={(e) => setProvince(e.target.value)}
+                  className="w-full px-3 py-2 border-2 border-stone-800 dark:border-stone-700 bg-stone-50 dark:bg-[#140e0e] text-stone-900 dark:text-stone-100 font-sans focus:outline-none focus:border-[#b33927] dark:focus:border-[#e85d46]"
+                >
+                  <option value="">Chọn khu vực sinh sống</option>
+                  {provinces.map((p) => (
+                    <option key={p} value={p}>
+                      {p}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Avatar Upload */}
+              <div className="space-y-1.5 pt-1">
+                <label className="text-[11px] font-mono font-bold uppercase text-stone-700 dark:text-stone-300">
+                  Ảnh hồ sơ cá nhân (Tùy chọn)
+                </label>
+                <div className="flex items-center gap-3 p-3 border-2 border-stone-300 dark:border-stone-700 bg-stone-50 dark:bg-[#140e0e]">
+                  {previewUrl ? (
+                    <img
+                      src={previewUrl}
+                      alt="Preview"
+                      className="w-10 h-10 object-cover border border-stone-800 shrink-0"
+                    />
+                  ) : (
+                    <div className="w-10 h-10 border border-stone-400 bg-stone-200 dark:bg-stone-800 flex items-center justify-center text-stone-500 shrink-0">
+                      <User className="w-5 h-5" />
+                    </div>
+                  )}
+                  <div className="flex-1 min-w-0">
+                    <label className="inline-flex items-center gap-1.5 px-3 py-1.5 border border-stone-800 dark:border-stone-600 bg-white dark:bg-stone-800 text-[11px] font-mono font-bold uppercase cursor-pointer hover:bg-stone-100">
+                      <Upload className="w-3 h-3 text-[#b33927] dark:text-[#e85d46]" />
+                      <span>Chọn tệp ảnh</span>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={handleImageChange}
+                        className="hidden"
+                      />
+                    </label>
+                    <p className="text-[10px] text-stone-500 mt-1 truncate font-mono">
+                      {img ? img.name : 'PNG, JPG hoặc WebP tối đa 5MB'}
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Terms Disclaimer */}
+              <div className="flex items-start gap-2 pt-2 text-[11px] text-stone-500 leading-relaxed font-sans">
+                <ShieldCheck className="w-3.5 h-3.5 text-[#b33927] dark:text-[#e85d46] shrink-0 mt-0.5" />
+                <span>
+                  Bằng việc bấm Tiếp tục, bạn cam kết thông tin kê khai là chính xác và đồng ý nhận mã xác thực OTP qua Thư điện tử.
+                </span>
+              </div>
+
+              {/* Submit Button */}
+              <button
+                type="submit"
+                disabled={isRegistering}
+                className="w-full py-3 border-2 border-stone-800 dark:border-[#e85d46] bg-[#b33927] dark:bg-[#e85d46] hover:bg-[#d6452e] dark:hover:bg-[#f07b68] text-white dark:text-stone-950 font-mono font-bold text-xs uppercase tracking-wider flex items-center justify-center gap-2 shadow-[3px_3px_0px_#40130d] transition-transform active:translate-x-0.5 active:translate-y-0.5 cursor-pointer disabled:opacity-50 mt-2"
+              >
+                {isRegistering ? (
+                  <span className="flex items-center gap-2">
+                    <RotateCw className="w-3.5 h-3.5 animate-spin" />
+                    Đang khởi tạo hồ sơ...
+                  </span>
+                ) : (
+                  <>
+                    <span>Tiếp tục (Nhận mã OTP)</span>
+                    <ArrowRight className="w-3.5 h-3.5" />
+                  </>
+                )}
+              </button>
+            </form>
+          ) : (
+            /* STEP 2: OTP VERIFICATION */
+            <form onSubmit={handleVerifySubmit} className="space-y-5 text-xs">
+              <div className="p-4 border-2 border-stone-300 dark:border-stone-700 bg-stone-50 dark:bg-[#140e0e] space-y-2 text-center">
+                <div className="w-10 h-10 border-2 border-[#b33927] dark:border-[#e85d46] bg-[#b33927]/10 text-[#b33927] dark:text-[#e85d46] flex items-center justify-center mx-auto">
+                  <KeyRound className="w-5 h-5" />
+                </div>
+                <h3 className="font-serif font-bold text-stone-900 dark:text-stone-100 text-sm">
+                  Nhập mã xác thực 6 số
+                </h3>
+                <p className="text-xs text-stone-600 dark:text-stone-400">
+                  Vui lòng kiểm tra hộp thư đến của <strong>{email}</strong>
+                </p>
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-[11px] font-mono font-bold uppercase text-stone-700 dark:text-stone-300 block text-center">
+                  MÃ OTP BẢO MẬT
+                </label>
+                <input
+                  type="text"
+                  required
+                  disabled={isVerifying}
+                  maxLength={10}
+                  value={otpToken}
+                  onChange={(e) => setOtpToken(e.target.value)}
+                  placeholder="123456"
+                  className="w-full text-center tracking-[0.4em] font-mono text-xl py-3 border-2 border-stone-800 dark:border-stone-700 bg-stone-50 dark:bg-[#140e0e] text-stone-900 dark:text-stone-100 placeholder:text-stone-400 focus:outline-none focus:border-[#b33927] dark:focus:border-[#e85d46]"
+                />
+              </div>
+
+              <div className="flex items-center justify-between text-[11px] font-mono pt-1">
+                <button
+                  type="button"
+                  onClick={() => setStep('REGISTER')}
+                  disabled={isVerifying}
+                  className="text-stone-600 hover:text-stone-900 dark:hover:text-stone-100"
+                >
+                  ← Đổi thông tin email
+                </button>
+
+                <button
+                  type="button"
+                  onClick={handleResendOtp}
+                  disabled={!canResend || isResending || isVerifying}
+                  className={`flex items-center gap-1 ${
+                    canResend && !isVerifying
+                      ? 'text-[#b33927] dark:text-[#e85d46] font-bold'
+                      : 'text-stone-400 cursor-not-allowed'
+                  }`}
+                >
+                  <RotateCw className={`w-3 h-3 ${isResending ? 'animate-spin' : ''}`} />
+                  <span>
+                    {canResend ? 'Gửi lại mã OTP' : `Gửi lại sau (${countdown}s)`}
+                  </span>
+                </button>
+              </div>
+
+              <button
+                type="submit"
+                disabled={isVerifying || !otpToken.trim()}
+                className="w-full py-3 border-2 border-stone-800 dark:border-[#e85d46] bg-[#b33927] dark:bg-[#e85d46] hover:bg-[#d6452e] dark:hover:bg-[#f07b68] text-white dark:text-stone-950 font-mono font-bold text-xs uppercase tracking-wider flex items-center justify-center gap-2 shadow-[3px_3px_0px_#40130d] transition-transform active:translate-x-0.5 active:translate-y-0.5 cursor-pointer disabled:opacity-50 mt-2"
+              >
+                {isVerifying ? (
+                  <span className="flex items-center gap-2">
+                    <RotateCw className="w-3.5 h-3.5 animate-spin" />
+                    Đang kích hoạt tài khoản...
+                  </span>
+                ) : (
+                  <>
+                    <span>Xác Nhận & Kích Hoạt Hồ Sơ</span>
+                    <CheckCircle2 className="w-3.5 h-3.5" />
+                  </>
+                )}
+              </button>
+            </form>
+          )}
+        </div>
+
+        {/* Footer */}
+        <p className="text-center text-[11px] font-mono text-stone-500">
+          © {new Date().getFullYear()} LawOh LegalTech • Tiêu chuẩn an ninh AES-256
+        </p>
       </div>
-
-      {/* Hình bên phải */}
-      <img
-        src="/caibuatien.jpg"
-        alt="Lady Justice"
-        className="h-4/5 object-contain"
-        style={{ width: '60%', height: 'auto' }}
-      />
     </div>
   );
 }
