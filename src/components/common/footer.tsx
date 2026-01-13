@@ -1,36 +1,189 @@
+'use client';
+
 import React from 'react';
 import Link from 'next/link';
-import Image from 'next/image';
-import styles from './footer.module.css';
+import { Scale, ShieldCheck, Mail, Phone, MapPin } from 'lucide-react';
+import { useLanguage } from '@/i18n/LanguageContext';
 
 const Footer = () => {
+  const { language } = useLanguage();
+  const isEn = language === 'en';
+
   return (
-    <footer className={styles.footer}>
-      <div className={styles.footerContent}>
-        <Image  src="/logo.png"
-            alt="Logo"
-            width={210}
-            height={56} className={styles.logoImage} priority  />
-        <div className={styles.linksSection}>
-          <Link href="/contact" className={styles.footerLink}>Contact Us</Link>
-          <Link href="/faq" className={styles.footerLink}>FAQ</Link>
-          <Link href="/support" className={styles.footerLink}>Support</Link>
-          <Link href="/privacy" className={styles.footerLink}>Privacy Policy</Link>
-          <Link href="/terms" className={styles.footerLink}>Terms of Service</Link>
+    <footer className="bg-[#faf7f2] dark:bg-[#0c0a09] border-t-4 border-stone-800 dark:border-stone-400 text-stone-700 dark:text-stone-300 font-sans transition-colors duration-200">
+      {/* Top Gazette Colophon Banner */}
+      <div className="border-b-2 border-stone-800 dark:border-stone-700 bg-stone-200/70 dark:bg-stone-900/90 py-2.5 px-4 sm:px-6 lg:px-8">
+        <div className="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-3 font-mono text-[10px] uppercase tracking-wider text-stone-600 dark:text-stone-400">
+          <div className="flex items-center gap-2">
+            <span className="inline-block w-2 h-2 bg-[#d95327]"></span>
+            <span className="font-bold text-stone-900 dark:text-stone-200">
+              {isEn ? 'OFFICIAL LEGAL GAZETTE & ARCHIVES' : 'CÔNG BÁO PHÁP LÝ & HỒ SƠ ÁN LỆ'}
+            </span>
+            <span className="hidden sm:inline text-stone-400">|</span>
+            <span className="hidden sm:inline">LAWOH GAZETTE</span>
+          </div>
+          <div className="flex items-center gap-4 text-[9px] font-mono">
+            <span className="bg-stone-300/80 dark:bg-stone-800 px-2 py-0.5 border border-stone-400 dark:border-stone-600">
+              {isEn ? 'VERIFIED ADVOCATE NETWORK' : 'MẠNG LƯỚI LUẬT SƯ CHÍNH THỐNG'}
+            </span>
+            <span className="hidden md:inline">EDITION: VIETNAM</span>
+          </div>
         </div>
-        <div className={styles.socialIcons}>
-          <a href="#" className={styles.icon}><svg viewBox="0 0 24 24" fill="white"><path d="M12 2.04C6.5 2.04 2 6.53 2 12.06C2 17.06 5.66 21.21 10.44 21.96V14.96H7.9V12.06H10.44V9.85C10.44 7.34 11.93 5.96 14.22 5.96C15.31 5.96 16.45 6.15 16.45 6.15V8.62H15.19C13.95 8.62 13.56 9.39 13.56 10.18V12.06H16.34L15.89 14.96H13.56V21.96C18.34 21.21 22 17.06 22 12.06C22 6.53 17.5 2.04 12 2.04Z" /></svg></a>
-          <a href="#" className={styles.icon}><svg viewBox="0 0 24 24" fill="white"><path d="M7.8 2H16.2C19.4 2 22 4.6 22 7.8V16.2C22 19.4 19.4 22 16.2 22H7.8C4.6 22 2 19.4 2 16.2V7.8C2 4.6 4.6 2 7.8 2ZM7.6 4C5.61 4 4 5.61 4 7.6V16.4C4 18.39 5.61 20 7.6 20H16.4C18.39 20 20 18.39 20 16.4V7.6C20 5.61 18.39 4 16.4 4H7.6ZM17.25 5.5C17.94 5.5 18.5 6.06 18.5 6.75C18.5 7.44 17.94 8 17.25 8C16.56 8 16 7.44 16 6.75C16 6.06 16.56 5.5 17.25 5.5ZM12 7C14.76 7 17 9.24 17 12C17 14.76 14.76 17 12 17C9.24 17 7 14.76 7 12C7 9.24 9.24 7 12 7ZM12 9C10.34 9 9 10.34 9 12C9 13.66 10.34 15 12 15C13.66 15 15 13.66 15 12C15 10.34 13.66 9 12 9Z" /></svg></a>
-          <a href="#" className={styles.icon}><svg viewBox="0 0 24 24" fill="white"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" /></svg></a>
-          <a href="#" className={styles.icon}><svg viewBox="0 0 24 24" fill="white"><path d="M19 3a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h14m-.5 15.5v-5.3a3.26 3.26 0 0 0-3.26-3.26c-.85 0-1.84.52-2.32 1.3v-1.11h-2.79v8.37h2.79v-4.93c0-.77.62-1.4 1.39-1.4a1.4 1.4 0 0 1 1.4 1.4v4.93h2.79M6.88 8.56a1.68 1.68 0 0 0 1.68-1.68c0-.93-.75-1.69-1.68-1.69a1.69 1.69 0 0 0-1.69 1.69c0 .93.76 1.68 1.69 1.68m1.39 9.94v-8.37H5.5v8.37h2.77z" /></svg></a>
-          <a href="#" className={styles.icon}><svg viewBox="0 0 24 24" fill="white"><path d="M10 15l5.19-3L10 9v6m11.79-5.14c.3-.3.3-.79 0-1.09l-3.5-3.5a.758.758 0 0 0-1.08 0l-3.5 3.5c-.3.3-.3.79 0 1.09l3.5 3.5c.3.3.79.3 1.08 0l3.5-3.5zM2.21 5.14c.3.3.3.79 0 1.09l-3.5 3.5a.758.758 0 0 1-1.08 0l-3.5-3.5a.758.758 0 0 1 0-1.09l3.5-3.5c.3-.3.79-.3 1.08 0l3.5 3.5z" /></svg></a>
+      </div>
+
+      {/* Main Broadside Content */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 md:py-16">
+        <div className="grid grid-cols-1 md:grid-cols-12 gap-10 lg:gap-12">
+          
+          {/* Column 1: Masthead Brand & Mission (5 cols) */}
+          <div className="md:col-span-5 space-y-5">
+            <Link href="/" className="inline-flex items-center gap-3 group">
+              {/* Retro Tactile Seal */}
+              <div className="w-10 h-10 border-2 border-stone-800 dark:border-stone-400 bg-[#d95327] text-white flex items-center justify-center shadow-[3px_3px_0px_#1c1917] dark:shadow-[3px_3px_0px_#000] relative">
+                <Scale className="w-5 h-5 text-white" />
+                <span className="absolute top-0.5 left-0.5 w-0.5 h-0.5 bg-stone-900"></span>
+                <span className="absolute top-0.5 right-0.5 w-0.5 h-0.5 bg-stone-900"></span>
+                <span className="absolute bottom-0.5 left-0.5 w-0.5 h-0.5 bg-stone-900"></span>
+                <span className="absolute bottom-0.5 right-0.5 w-0.5 h-0.5 bg-stone-900"></span>
+              </div>
+              <div>
+                <span className="font-serif font-black text-2xl tracking-tight text-stone-900 dark:text-stone-50 block leading-tight">
+                  LawOh
+                </span>
+                <span className="font-mono text-[10px] uppercase tracking-widest text-[#d95327] font-bold block">
+                  {isEn ? 'Chambers & LegalTech' : 'Công Báo Pháp Lý & Luật Sư'}
+                </span>
+              </div>
+            </Link>
+
+            <p className="text-xs text-stone-600 dark:text-stone-400 leading-relaxed font-serif max-w-md">
+              {isEn
+                ? 'LawOh connects certified advocates directly with citizens and enterprises. Delivering codified docket scheduling, validated case-law precedents, and consultation records.'
+                : 'Nền tảng công nghệ pháp lý kết nối trực tiếp Luật sư chính ngạch với người dân và doanh nghiệp. Cung cấp hồ sơ tư vấn trực tuyến, tra cứu án lệ và biểu mẫu pháp lý chuẩn mực.'}
+            </p>
+
+            {/* Editorial Registry Stamp */}
+            <div className="p-3 border border-stone-400 dark:border-stone-700 bg-stone-100/70 dark:bg-stone-900/60 flex items-center gap-3 max-w-md shadow-[2px_2px_0px_rgba(0,0,0,0.06)]">
+              <ShieldCheck className="w-5 h-5 text-[#d95327] shrink-0" />
+              <div className="font-mono text-[10px] text-stone-500 dark:text-stone-400 leading-tight">
+                <p className="font-bold text-stone-800 dark:text-stone-200">
+                  {isEn ? 'VERIFIED ADVOCATE PROTOCOL' : 'HỆ THỐNG KẾT NỐI LUẬT SƯ TRỰC TUYẾN'}
+                </p>
+                <p className="text-[9px]">HỒ SƠ ĐĂNG KÝ VÀ KIỂM DUYỆT BỞI BAN QUẢN TRỊ</p>
+              </div>
+            </div>
+          </div>
+
+          {/* Column 2: Legal Services (2 cols) */}
+          <div className="md:col-span-2 space-y-4">
+            <h4 className="font-serif font-black text-sm text-stone-900 dark:text-stone-100 uppercase tracking-wider border-b-2 border-stone-800 dark:border-stone-700 pb-1 inline-block">
+              § I. {isEn ? 'Services' : 'Dịch vụ'}
+            </h4>
+            <ul className="space-y-2.5 font-mono text-xs text-stone-600 dark:text-stone-400">
+              <li>
+                <Link href="/lawyers" className="hover:text-[#d95327] dark:hover:text-[#d95327] hover:underline underline-offset-4 flex items-center gap-1.5 transition-colors">
+                  <span className="text-stone-400">›</span>
+                  {isEn ? 'Bar Directory' : 'Danh bạ Luật sư'}
+                </Link>
+              </li>
+              <li>
+                <Link href="/services" className="hover:text-[#d95327] dark:hover:text-[#d95327] hover:underline underline-offset-4 flex items-center gap-1.5 transition-colors">
+                  <span className="text-stone-400">›</span>
+                  {isEn ? 'Tariff & Booking' : 'Biểu phí & Đặt hẹn'}
+                </Link>
+              </li>
+              <li>
+                <Link href="/document/DN" className="hover:text-[#d95327] dark:hover:text-[#d95327] hover:underline underline-offset-4 flex items-center gap-1.5 transition-colors">
+                  <span className="text-stone-400">›</span>
+                  {isEn ? 'Legal Templates' : 'Biểu mẫu pháp lý'}
+                </Link>
+              </li>
+            </ul>
+          </div>
+
+          {/* Column 3: Gazette & Resources (2 cols) */}
+          <div className="md:col-span-2 space-y-4">
+            <h4 className="font-serif font-black text-sm text-stone-900 dark:text-stone-100 uppercase tracking-wider border-b-2 border-stone-800 dark:border-stone-700 pb-1 inline-block">
+              § II. {isEn ? 'Archives' : 'Tài nguyên'}
+            </h4>
+            <ul className="space-y-2.5 font-mono text-xs text-stone-600 dark:text-stone-400">
+              <li>
+                <Link href="/document/DN" className="hover:text-[#d95327] dark:hover:text-[#d95327] hover:underline underline-offset-4 flex items-center gap-1.5 transition-colors">
+                  <span className="text-stone-400">›</span>
+                  {isEn ? 'Corporate Forms' : 'Biểu mẫu Doanh nghiệp'}
+                </Link>
+              </li>
+              <li>
+                <Link href="/newsPage" className="hover:text-[#d95327] dark:hover:text-[#d95327] hover:underline underline-offset-4 flex items-center gap-1.5 transition-colors">
+                  <span className="text-stone-400">›</span>
+                  {isEn ? 'Supreme Case Law' : 'Án lệ & Nghị quyết'}
+                </Link>
+              </li>
+              <li>
+                <Link href="/newsPage" className="hover:text-[#d95327] dark:hover:text-[#d95327] hover:underline underline-offset-4 flex items-center gap-1.5 transition-colors">
+                  <span className="text-stone-400">›</span>
+                  {isEn ? 'Gazette News' : 'Bản tin Công Báo'}
+                </Link>
+              </li>
+              <li>
+                <Link href="/register" className="hover:text-[#d95327] dark:hover:text-[#d95327] hover:underline underline-offset-4 flex items-center gap-1.5 transition-colors">
+                  <span className="text-stone-400">›</span>
+                  {isEn ? 'For Advocates' : 'Dành cho Luật sư'}
+                </Link>
+              </li>
+            </ul>
+          </div>
+
+          {/* Column 4: Chambers Registry / Contact (3 cols) */}
+          <div className="md:col-span-3 space-y-4">
+            <h4 className="font-serif font-black text-sm text-stone-900 dark:text-stone-100 uppercase tracking-wider border-b-2 border-stone-800 dark:border-stone-700 pb-1 inline-block">
+              § III. {isEn ? 'Chambers Dispatch' : 'Liên hệ & Tổng đài'}
+            </h4>
+            <div className="p-3.5 border-2 border-stone-800 dark:border-stone-700 bg-white dark:bg-stone-900 shadow-[3px_3px_0px_#1c1917] dark:shadow-[3px_3px_0px_#000] space-y-3 font-mono text-xs">
+              <a
+                href="tel:0853012003"
+                className="flex items-center gap-2 text-stone-800 dark:text-stone-200 hover:text-[#d95327] dark:hover:text-[#d95327] transition-colors"
+              >
+                <Phone className="w-3.5 h-3.5 text-[#d95327] shrink-0" />
+                <span className="font-bold">{isEn ? 'Hotline: 0853012003' : 'Tổng đài: 0853012003'}</span>
+              </a>
+              <a
+                href="mailto:haidang71214@gmail.com"
+                className="flex items-center gap-2 text-stone-600 dark:text-stone-400 text-[11px] hover:text-[#d95327] dark:hover:text-[#d95327] transition-colors"
+              >
+                <Mail className="w-3.5 h-3.5 text-[#d95327] shrink-0" />
+                <span>haidang71214@gmail.com</span>
+              </a>
+              <div className="flex items-start gap-2 text-stone-600 dark:text-stone-400 text-[11px] pt-1 border-t border-stone-200 dark:border-stone-800">
+                <MapPin className="w-3.5 h-3.5 text-[#d95327] shrink-0 mt-0.5" />
+                <span>{isEn ? 'Headquarters: Da Nang, Vietnam' : 'Trụ sở: Đà Nẵng, Việt Nam'}</span>
+              </div>
+            </div>
+          </div>
         </div>
-        <div className={styles.footerBottom}>
-          <p>© 2024 Lawoh. All rights reserved.</p>
-          <div className={styles.bottomLinks}>
-            <Link href="/privacy" className={styles.footerLink}>Privacy Policy</Link>
-            <Link href="/terms" className={styles.footerLink}>Terms of Service</Link>
-            <Link href="/cookies" className={styles.footerLink}>Cookies Settings</Link>
+
+        {/* Bottom Colophon Bar */}
+        <div className="mt-12 pt-6 border-t-2 border-dashed border-stone-400 dark:border-stone-700 flex flex-col sm:flex-row items-center justify-between gap-4 font-mono text-[11px] text-stone-500 dark:text-stone-400">
+          <div className="flex items-center gap-2 text-center sm:text-left">
+            <span>© {new Date().getFullYear()} LAWOH VIETNAM LEGALTECH CORP.</span>
+            <span className="hidden md:inline">•</span>
+            <span className="hidden md:inline">
+              {isEn ? 'ALL CONSTITUTIONAL RIGHTS RESERVED.' : 'TOÀN BỘ BẢN QUYỀN ĐƯỢC BẢO LƯU THEO LUẬT ĐỊNH.'}
+            </span>
+          </div>
+          
+          <div className="flex items-center gap-6 font-bold uppercase tracking-wider text-[10px]">
+            <Link href="/services" className="hover:text-[#d95327] transition-colors underline-offset-2 hover:underline">
+              {isEn ? 'TERMS OF DOCKET' : 'ĐIỀU KHOẢN SỬ DỤNG'}
+            </Link>
+            <span>/</span>
+            <Link href="/services" className="hover:text-[#d95327] transition-colors underline-offset-2 hover:underline">
+              {isEn ? 'PRIVACY ARCHIVE' : 'CHÍNH SÁCH BẢO MẬT'}
+            </Link>
+            <span>/</span>
+            <Link href="/newsPage" className="hover:text-[#d95327] transition-colors underline-offset-2 hover:underline">
+              {isEn ? 'STATUTES' : 'QUY CHẾ HOẠT ĐỘNG'}
+            </Link>
           </div>
         </div>
       </div>
@@ -38,4 +191,4 @@ const Footer = () => {
   );
 };
 
-export default Footer; 
+export default Footer;

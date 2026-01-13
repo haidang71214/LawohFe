@@ -1,26 +1,33 @@
 // app/providers.tsx
 "use client";
-import {HeroUIProvider} from '@heroui/react'
-import {ToastProvider} from "@heroui/toast";
+import { Provider } from 'react-redux';
+import { store } from '@/store';
+import { HeroUIProvider } from '@heroui/react';
+import { ToastProvider } from '@heroui/toast';
+import { LanguageProvider } from '@/i18n/LanguageContext';
+import { ThemeProvider } from '@/theme/ThemeContext';
 
-export default function Providers({children} :any) {
+export default function Providers({ children }: { children: React.ReactNode }) {
   return (
-    <HeroUIProvider>
-<ToastProvider
-  placement="bottom-left"
-  toastProps={{
-    variant: "flat",
-    timeout: 3000,
-    classNames: {
-      base: "z-[9999] max-w-sm bg-white text-black border border-gray-300 shadow-lg backdrop-blur-md rounded-lg",
-      content: "px-4 py-3",
-      title: "text-base font-semibold",
-      description: "text-sm text-gray-700",
-      icon: "text-red-500",
-    },
-  }}
-/>
-      {children}
-    </HeroUIProvider>
-  )
+    <Provider store={store}>
+      <ThemeProvider>
+        <LanguageProvider>
+          <HeroUIProvider>
+            <ToastProvider
+              placement="bottom-right"
+              toastOffset={20}
+              toastProps={{
+                variant: "flat",
+                timeout: 3500,
+                classNames: {
+                  base: "!z-[2147483647]",
+                },
+              }}
+            />
+            {children}
+          </HeroUIProvider>
+        </LanguageProvider>
+      </ThemeProvider>
+    </Provider>
+  );
 }
