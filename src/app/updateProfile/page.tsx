@@ -1,5 +1,5 @@
 
-import UpdateProfile from '@/components/module/update-profile'
+import UpdateProfile from '@/components/module/updateProfile'
 
 
 import React from 'react'
