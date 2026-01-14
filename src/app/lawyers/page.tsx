@@ -1,23 +1,16 @@
-// app/lawyers/[type]/page.tsx
+import React, { Suspense } from 'react';
+import LawyersDirectory from '@/components/module/lawyers/LawyersDirectory';
 
-import ShittingFile from '@/components/module/lawyers/ShittingFile';
-import React from 'react';
-
-// // Định nghĩa kiểu cho params
-// interface PageProps {
-//   params: {
-//     type: string; // Kiểu của type là string, vì đây là tham số động từ URL
-//   };
-// }
-// { params }: PageProps
 export default function Page() {
-  // const { type } = params; // Lấy tham số 'type' từ URL
-
   return (
-    <div>
-  
-      <ShittingFile/>
-
-    </div>
+    <Suspense
+      fallback={
+        <div className="min-h-screen bg-[#08090a] flex items-center justify-center text-xs text-[#62666d]">
+          Đang tải danh bạ luật sư...
+        </div>
+      }
+    >
+      <LawyersDirectory />
+    </Suspense>
   );
 }
