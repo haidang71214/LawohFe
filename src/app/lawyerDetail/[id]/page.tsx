@@ -1,5 +1,5 @@
 
-import DetailLawyer from '@/components/module/DetailLawyers/DetailLawyer';
+import DetailLawyer from '@/components/module/lawyerDetail/DetailLawyer';
 
 // Mark the function as async to allow awaiting params
 export default async function LawyerDetailPage({ params }: { params: Promise<{ id: string }> }) {
