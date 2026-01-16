@@ -1,5 +1,5 @@
 
-import BookingList from '@/components/module/booking-list/BookingList'
+import BookingList from '@/components/module/bookingList/BookingList'
 import React from 'react'
 
 export default function page() {
