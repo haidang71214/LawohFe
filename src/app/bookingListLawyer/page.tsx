@@ -1,5 +1,5 @@
 
-import BookingListForLawyer from '@/components/module/booking-listForLaywer/BookingListForLawyer'
+import BookingListForLawyer from '@/components/module/bookingListLawyer/BookingListForLawyer'
 import React from 'react'
 
 export default function page() {

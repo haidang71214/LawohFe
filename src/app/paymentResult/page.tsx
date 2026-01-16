@@ -22,7 +22,7 @@ function PaymentResultContent() {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   useEffect(() => {
-    // First, check if parameters are already in the URL (from backend redirect)
+    // First, check if parameters are already in the URL (./HomePage backend redirect)
     const status = searchParams.get('status');
     const code = searchParams.get('code');
     const txnRef = searchParams.get('txnRef');
