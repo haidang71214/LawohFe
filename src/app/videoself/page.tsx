@@ -1,14 +1,11 @@
 
-import VideoManager from '@/components/module/quanlivideochominh/VideoManager'
+import VideoManager from '@/components/module/videoSelf/VideoManager'
 import React from 'react'
 
-// lấy cái quản lí video cho mình
-export default function QuanLiVideo() {
+export default function VideoSelfPage() {
   return (
     <div>
-
       <VideoManager/>
-
     </div>
   )
 }
