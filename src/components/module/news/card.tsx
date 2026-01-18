@@ -4,7 +4,7 @@ import React, { useEffect, useState } from 'react'
 import { Clock, User, Calendar } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { axiosInstance } from '@/fetchApi'
-import { LOGIN_USER } from '@/constant/enum'
+import { LOGIN_USER } from '@/constants/enum'
 
 export interface News {
   _id: string
@@ -62,20 +62,20 @@ const getCategoryLabel = (category: string) => {
 
 const NewsCard: React.FC<NewsCardProps> = ({ news, index, onClick, onDelete }) => {
   const [isLawyer, setIsLawyer] = useState(false)
-  const [isHehe,setIsHehe] = useState(false)
+  const [isAdmin, setIsAdmin] = useState(false)
   useEffect(() => {
     const fetchUserData = async () => {
       const token = localStorage.getItem(LOGIN_USER)
       if (token) {
         try {
-          const response = await axiosInstance.get('/auth/getMySelf', {
+          const response = await axiosInstance.get('/auth/me', {
             headers: { Authorization: `Bearer ${token}` },
           })
-          const userData = response.data.data || response.data
-          const idAdmin = userData.role === 'lawyer'
-          const isHehe = userData.role === 'admin'
-          setIsLawyer(idAdmin)
-          setIsHehe(isHehe)
+          const userData = response.data?.data || response.data
+          const isUserLawyer = userData?.role === 'lawyer'
+          const isUserAdmin = userData?.role === 'admin'
+          setIsLawyer(isUserLawyer)
+          setIsAdmin(isUserAdmin)
         } catch (error) {
           console.error('Error fetching user data:', error)
         }
@@ -345,7 +345,7 @@ const NewsCard: React.FC<NewsCardProps> = ({ news, index, onClick, onDelete }) =
           <div style={readMoreContainerStyle}>
             <span style={readMoreTextStyle}>Nhấn để đọc thêm</span>
             <div data-progress style={progressBarStyle} />
-            {isHehe && onDelete && (
+            {isAdmin && onDelete && (
               <Button
                 onClick={(e) => {
                   e.stopPropagation()

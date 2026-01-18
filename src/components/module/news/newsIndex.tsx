@@ -39,7 +39,7 @@ const statusOptions = {
   REJECTED: 'Đã từ chối',
 };
 
-export default function NewsSelf() {
+export default function NewsIndex() {
   const [newsData, setNewsData] = useState<News[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -53,8 +53,18 @@ export default function NewsSelf() {
   useEffect(() => {
     const fetchNews = async () => {
       try {
-        const response = await axiosInstance.get('/news/GetAllNews');
-        setNewsData(response.data);
+        const response = await axiosInstance.get('/news/public');
+        const raw = response.data?.data || response.data || [];
+        const rawData: any[] = Array.isArray(raw?.data)
+          ? raw.data
+          : Array.isArray(raw)
+          ? raw
+          : Array.isArray(raw?.items)
+          ? raw.items
+          : Array.isArray(raw?.news)
+          ? raw.news
+          : [];
+        setNewsData(rawData);
       } catch (err) {
         setError("Không thể tải tin tức.");
         console.error(err);

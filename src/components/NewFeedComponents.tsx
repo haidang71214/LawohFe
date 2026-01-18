@@ -1,6 +1,6 @@
 import React from 'react'
 
-export default function NewFeedComponetns() {
+export default function NewFeedComponents() {
   return (
     <div>
       <div>
