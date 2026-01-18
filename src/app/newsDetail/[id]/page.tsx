@@ -1,5 +1,5 @@
 
-import NewsDetailIndex from '@/components/module/newsDetails/newsDetailIndex';
+import NewsDetailIndex from '@/components/module/newsDetail/NewsDetailIndex';
 import React from 'react';
 
 export default async function NewsPage({ params }: { params: Promise<{ id: string }> }) {

@@ -1,5 +1,5 @@
 
-import NewsList from '@/components/module/newsPages/NewsPageIndex'
+import NewsList from '@/components/module/newsPage/NewsPageIndex'
 import React from 'react'
 
 export default function NewsListPage() {
