@@ -41,7 +41,7 @@ const statusOptions = {
   REJECTED: 'Đã từ chối',
 };
 
-export default function NewsSelf() {
+export default function NewsManager() {
   const [newsData, setNewsData] = useState<News[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
