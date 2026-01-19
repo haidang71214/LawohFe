@@ -1,308 +1,270 @@
-"use client";
-import React, { useState, useEffect } from "react";
-import { axiosInstance, BASE_URL } from "@/fetchApi";
-import { Button, Modal, ModalBody, ModalContent, ModalFooter, ModalHeader } from "@heroui/react";
-import styles from "./DocumentCard.module.css";
-import { LawyerCategories } from "@/components/common/EnumCommon";
+'use client';
 
-interface Form {
-  _id: string;
-  uri_secure: string;
-  mainContent: string;
-  description: string;
-  type: string;
-  createdAt: string;
-  updatedAt: string;
-}
+import React, { useState } from 'react';
+import Link from 'next/link';
+import {
+  Download,
+  Search,
+  X,
+  FolderArchive,
+  ArrowDownToLine,
+} from 'lucide-react';
+import toast from '@/lib/toast';
 
-interface Meta {
-  page: number;
-  limit: number;
-  total: number;
-}
-
-interface DocumentIndexProps {
+interface DocumentTypeProps {
   typeDocument: string;
 }
 
-const typeDocumentMap: Record<string, string> = {
-  INSURANCE: LawyerCategories.INSURANCE,
-  CIVIL: LawyerCategories.CIVIL,
-  LAND: LawyerCategories.LAND,
-  CORPORATE: LawyerCategories.BUSINESS,
-  TRANSPORTATION: LawyerCategories.TRANSPORTATION,
-  ADMINISTRATIVE: LawyerCategories.ADMINISTRATIVE,
-  CRIMINAL: LawyerCategories.CRIMINAL,
-  FAMILY: LawyerCategories.FAMILY,
-  LABOR: LawyerCategories.LABOR,
-  INTELLECTUAL_PROPERTY: LawyerCategories.INTELLECTUAL_PROPERTY,
-  INHERITANCE: LawyerCategories.INHERITANCE,
-  TAX: LawyerCategories.TAX,
+const documentCategoryMap: Record<string, { code: string; label: string; desc: string }> = {
+  DN: { code: 'DOC-DN', label: 'Doanh nghiệp & Thương mại', desc: 'Mẫu hợp đồng kinh tế, điều lệ công ty, biên bản họp Hội đồng quản trị.' },
+  DS: { code: 'DOC-DS', label: 'Dân sự & Đất đai', desc: 'Hợp đồng chuyển nhượng quyền sử dụng đất, đơn tranh chấp ranh giới, giấy ủy quyền.' },
+  HS: { code: 'DOC-HS', label: 'Hình sự & Tố tụng', desc: 'Đơn tố giác tội phạm, đơn xin bảo lãnh tại ngoại, bản tự khai, đơn giảm nhẹ hình phạt.' },
+  HN: { code: 'DOC-HN', label: 'Hôn nhân & Gia đình', desc: 'Đơn thuận tình ly hôn, đơn ly hôn đơn phương, văn bản thỏa thuận phân chia tài sản.' },
+  LD: { code: 'DOC-LD', label: 'Lao động & Việc làm', desc: 'Hợp đồng lao động chuẩn, quyết định chấm dứt HĐLĐ, nội quy lao động doanh nghiệp.' },
 };
 
-export default function DocumentIndex({ typeDocument }: DocumentIndexProps) {
-  const [forms, setForms] = useState<Form[]>([]);
-  const [meta, setMeta] = useState<Meta>({ page: 1, limit: 10, total: 0 });
-  const [loading, setLoading] = useState<boolean>(false);
-  const [error, setError] = useState<string | null>(null);
-  const [page, setPage] = useState<number>(1);
-  const [selectedForm, setSelectedForm] = useState<Form | null>(null);
-  const [downloading, setDownloading] = useState<string | null>(null);
-
-  const fetchForms = async (pageNum: number) => {
-    setLoading(true);
-    setError(null);
-    try {
-      const response = await axiosInstance.get("/form/heheForm", {
-        params: { page: pageNum, limit: 10, type: typeDocument },
-      });
-      if (response.data.success) {
-        setForms(response.data.data);
-        setMeta(response.data.meta);
-      } else {
-        setError("Không thể tải biểu mẫu");
-      }
-    } catch (err) {
-      setError("Lỗi khi tải biểu mẫu: " + (err as Error).message);
-    } finally {
-      setLoading(false);
-    }
+export default function DocumentTypeIndex({ typeDocument }: DocumentTypeProps) {
+  const currentCategory = documentCategoryMap[typeDocument] || {
+    code: 'DOC-ALL',
+    label: 'Văn bản Pháp luật',
+    desc: 'Hệ thống biểu mẫu pháp lý chuẩn quy định.',
   };
 
-  useEffect(() => {
-    fetchForms(page);
-  }, [page, typeDocument]);
+  const [search, setSearch] = useState('');
+  const [selectedDoc, setSelectedDoc] = useState<any>(null);
 
-  const handlePageChange = (newPage: number) => {
-    if (newPage > 0 && newPage <= Math.ceil(meta.total / meta.limit)) {
-      setPage(newPage);
-      window.scrollTo({ top: 0, behavior: "smooth" });
-    }
-  };
+  const sampleDocuments = [
+    {
+      _id: 'doc_1',
+      code: 'DS-23/TAND',
+      title: 'Đơn khởi kiện vụ án dân sự (Mẫu số 23-DS)',
+      desc: 'Áp dụng theo Nghị quyết 01/2017/NQ-HĐTP của Hội đồng Thẩm phán TAND Tối cao ban hành chuẩn toàn quốc.',
+      type: 'DS',
+      fileSize: '45 KB',
+      format: 'DOCX',
+      officialAuthority: 'Hội đồng Thẩm phán TAND Tối cao',
+    },
+    {
+      _id: 'doc_2',
+      code: 'DS-48/BDS',
+      title: 'Hợp đồng chuyển nhượng quyền sử dụng đất và tài sản gắn liền với đất',
+      desc: 'Mẫu hợp đồng công chứng mới nhất tuân thủ Luật Đất đai và Luật Kinh doanh Bất động sản hiện hành.',
+      type: 'DS',
+      fileSize: '68 KB',
+      format: 'DOCX',
+      officialAuthority: 'Bộ Tư pháp & Cục Bổ trợ Tư pháp',
+    },
+    {
+      _id: 'doc_3',
+      code: 'HN-01/LH',
+      title: 'Đơn yêu cầu công nhận thuận tình ly hôn và thỏa thuận nuôi con',
+      desc: 'Chuẩn quy định tại TAND cấp huyện kèm bản kê tài sản chung và hướng dẫn nộp án phí tố tụng.',
+      type: 'HN',
+      fileSize: '38 KB',
+      format: 'DOCX',
+      officialAuthority: 'TAND Cấp Huyện / Tỉnh',
+    },
+    {
+      _id: 'doc_4',
+      code: 'LD-12/HDLD',
+      title: 'Hợp đồng lao động không xác định thời hạn (Chuẩn Bộ luật Lao động)',
+      desc: 'Quy định đầy đủ về tiền lương, phụ cấp, bảo hiểm bắt buộc và các điều khoản giải quyết tranh chấp.',
+      type: 'LD',
+      fileSize: '52 KB',
+      format: 'DOCX',
+      officialAuthority: 'Bộ Lao động - Thương binh & Xã hội',
+    },
+    {
+      _id: 'doc_5',
+      code: 'DN-08/DLCT',
+      title: 'Điều lệ Công ty Trách nhiệm hữu hạn Hai thành viên trở lên',
+      desc: 'Soạn thảo theo Luật Doanh nghiệp mới nhất, chuẩn quyền biểu quyết và cơ chế chuyển nhượng phần vốn góp.',
+      type: 'DN',
+      fileSize: '110 KB',
+      format: 'DOCX',
+      officialAuthority: 'Bộ Kế hoạch & Đầu tư',
+    },
+    {
+      _id: 'doc_6',
+      code: 'HS-05/TGTP',
+      title: 'Đơn tố giác hành vi vi phạm pháp luật / lừa đảo chiếm đoạt tài sản',
+      desc: 'Mẫu đơn gửi Cơ quan Cảnh sát điều tra Công an cấp huyện/tỉnh kèm bảng kê tài liệu và chứng cứ thu thập.',
+      type: 'HS',
+      fileSize: '42 KB',
+      format: 'DOCX',
+      officialAuthority: 'Cơ quan Cảnh sát Điều tra',
+    },
+  ];
 
-  const handleViewForm = (form: Form) => {
-    setSelectedForm(form);
-  };
-
-  const handleCloseModal = () => {
-    setSelectedForm(null);
-  };
-
-  const handleDownloadForm = async (id: string, mainContent: string) => {
-    setDownloading(id);
-    try {
-      //  8080
-      const response = await fetch(`${BASE_URL}/form/download/${id}`, {
-        method: "GET",
-        headers: {
-          Accept: "application/pdf",
-        },
-      });
-
-      if (!response.ok) {
-        throw new Error(`Không thể tải file ${mainContent}: Mã lỗi ${response.status}`);
-      }
-
-      const blob = await response.blob();
-      const url = window.URL.createObjectURL(blob);
-      const link = document.createElement("a");
-      link.href = url;
-
-      // Extract filename from content-disposition header
-      const disposition = response.headers.get("content-disposition");
-      let filename = `${mainContent}.pdf`; // Fallback
-      if (disposition && disposition.includes("filename=")) {
-        filename = disposition.match(/filename="([^"]+)"/)?.[1] || filename;
-      }
-      link.download = filename;
-
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      window.URL.revokeObjectURL(url); // Clean up
-    } catch (err) {
-      console.error("Lỗi khi tải file:", err);
-      setError(`Không thể tải file ${mainContent}: ${err}`);
-    } finally {
-      setDownloading(null);
-    }
-  };
-
-  const typeDocumentVietnamese = typeDocumentMap[typeDocument] || typeDocument;
+  const filteredDocs = sampleDocuments.filter((doc) => {
+    const matchType = !typeDocument || doc.type === typeDocument;
+    const matchQuery = !search || doc.title.toLowerCase().includes(search.toLowerCase());
+    return matchType && matchQuery;
+  });
 
   return (
-    <div className={styles.cardContainer} style={{ paddingTop: "110px" }}>
-      <main className={styles.mainContent}>
-        <h1 className={styles.header}>
-          Loại biểu mẫu - <span className={styles.headerSpan}>{typeDocumentVietnamese}</span>
-        </h1>
+    <div className="min-h-screen bg-[#fcf8f3] dark:bg-[#170e10] text-stone-900 dark:text-stone-100 flex flex-col font-sans transition-colors duration-200">
+      {/* Editorial Header / Masthead */}
+      <section className="pt-10 pb-8 border-b-2 border-stone-800 dark:border-[#7f1d28] bg-stone-100/90 dark:bg-[#201316]">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 space-y-4">
+          <div className="flex items-center justify-between border-b border-stone-300 dark:border-stone-700/60 pb-2 text-[11px] font-mono uppercase tracking-wider text-stone-600 dark:text-stone-400">
+            <span className="flex items-center gap-1.5 font-bold text-[#7f1d28] dark:text-[#e56776]">
+              <FolderArchive className="w-3.5 h-3.5" />
+              TỔNG CỤC LƯU TRỮ VĂN BẢN & BIỂU MẪU TỐ TỤNG
+            </span>
+            <span className="hidden sm:inline">ARCHIVE SERIES 2026</span>
+            <span className="font-bold">STANDARD FORMS</span>
+          </div>
 
-        {loading && <p className={styles.loading}>Đang tải biểu mẫu...</p>}
+          <div className="space-y-2">
+            <h1 className="text-2xl sm:text-4xl font-serif font-black tracking-tight text-stone-900 dark:text-stone-50">
+              Kho Biểu Mẫu Pháp Lý & Văn Bản Mẫu
+            </h1>
+            <p className="text-xs sm:text-sm text-stone-600 dark:text-stone-400 font-sans max-w-2xl">
+              {currentCategory.desc} Định dạng văn bản DOCX chuẩn hoá theo biểu mẫu của Tòa án nhân dân Tối cao và Bộ Tư pháp.
+            </p>
+          </div>
 
-        {error && <p className={styles.error}>{error}</p>}
+          {/* Category Tabs / Docket Selector */}
+          <div className="flex flex-wrap items-center gap-2 pt-2">
+            {Object.entries(documentCategoryMap).map(([key, cat]) => (
+              <Link
+                key={key}
+                href={`/document/${key}`}
+                className={`px-3 py-1.5 border-2 text-xs font-mono font-bold uppercase transition-all active:translate-x-0.5 active:translate-y-0.5 ${
+                  typeDocument === key
+                    ? 'border-[#7f1d28] dark:border-[#e56776] bg-[#7f1d28] dark:bg-[#e56776] text-white dark:text-stone-950 shadow-[3px_3px_0px_#4a0d14]'
+                    : 'border-stone-800 dark:border-stone-700 bg-white dark:bg-[#1a1114] text-stone-800 dark:text-stone-300 hover:bg-stone-100 dark:hover:bg-stone-800 shadow-[2px_2px_0px_#7f1d28]/30'
+                }`}
+              >
+                [{cat.code}] {cat.label.split('&')[0]}
+              </Link>
+            ))}
+          </div>
+        </div>
+      </section>
 
-        {!loading && !error && forms.length === 0 && (
-          <p className={styles.noForms}>Không tìm thấy biểu mẫu cho loại này.</p>
-        )}
+      {/* Main Workspace */}
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 py-8 w-full space-y-6">
+        {/* Search Bar */}
+        <div className="relative max-w-md">
+          <Search className="w-4 h-4 text-stone-500 absolute left-3.5 top-1/2 -translate-y-1/2" />
+          <input
+            type="text"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Tra cứu tên biểu mẫu, loại hợp đồng, đơn thư..."
+            className="w-full pl-10 pr-4 py-2.5 border-2 border-stone-800 dark:border-stone-700 bg-white dark:bg-[#1f1417] text-xs font-mono text-stone-900 dark:text-stone-100 placeholder:text-stone-400 focus:outline-none focus:border-[#7f1d28] dark:focus:border-[#e56776] shadow-[3px_3px_0px_#7f1d28]/20"
+          />
+        </div>
 
-        <div className={styles.cardGrid}>
-          {forms.map((form) => (
+        {/* Document Docket List */}
+        <div className="border-2 border-stone-800 dark:border-[#7f1d28] bg-white dark:bg-[#1c1215] shadow-[6px_6px_0px_#7f1d28] dark:shadow-[6px_6px_0px_#e56776] divide-y-2 divide-stone-800 dark:divide-stone-800">
+          {filteredDocs.map((doc) => (
             <div
-              key={form._id}
-              className={`${styles.card} ${styles.cardItem}`}
-              style={{ opacity: 0 }}
+              key={doc._id}
+              className="p-5 sm:p-6 flex flex-col md:flex-row md:items-center justify-between gap-4 hover:bg-stone-50 dark:hover:bg-[#25181c] transition-colors group"
             >
-              <div className={styles.cardContent}>
-                <h2 className={styles.cardTitle}>{form.mainContent}</h2>
-                <p className={styles.cardDescription}>{form.description}</p>
+              <div className="space-y-2 flex-1">
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="font-mono text-[11px] font-bold px-2 py-0.5 border border-[#7f1d28] dark:border-[#e56776] text-[#7f1d28] dark:text-[#e56776] bg-[#7f1d28]/10">
+                    [{doc.code}]
+                  </span>
+                  <span className="font-mono text-[10px] text-stone-600 dark:text-stone-400">
+                    {doc.officialAuthority}
+                  </span>
+                  <span className="font-mono text-[10px] px-1.5 py-0.2 border border-stone-400 dark:border-stone-700 bg-stone-100 dark:bg-stone-800 text-stone-700 dark:text-stone-300">
+                    {doc.format} • {doc.fileSize}
+                  </span>
+                </div>
+
+                <h3 className="font-serif font-bold text-base sm:text-lg text-stone-900 dark:text-stone-50 group-hover:text-[#7f1d28] dark:group-hover:text-[#e56776] transition-colors leading-snug">
+                  {doc.title}
+                </h3>
+
+                <p className="text-xs text-stone-600 dark:text-stone-400 leading-relaxed max-w-3xl">
+                  {doc.desc}
+                </p>
               </div>
-              <div className={styles.cardFooter}>
-                <time className={styles.time} dateTime={form.createdAt}>
-                  Ngày tạo: {new Date(form.createdAt).toLocaleDateString("vi-VN")}
-                </time>
-                <Button
-                  variant="bordered"
-                  size="sm"
-                  onClick={() => handleViewForm(form)}
-                  aria-label={`Xem chi tiết: ${form.mainContent}`}
-                  style={{ borderColor: "#007bff", color: "#007bff", marginRight: "10px" }}
+
+              <div className="flex items-center gap-2.5 shrink-0 pt-2 md:pt-0">
+                <button
+                  onClick={() => setSelectedDoc(doc)}
+                  className="px-3 py-2 border-2 border-stone-800 dark:border-stone-600 bg-white dark:bg-stone-800 hover:bg-stone-100 dark:hover:bg-stone-700 text-xs font-mono font-bold uppercase tracking-wider text-stone-800 dark:text-stone-200 shadow-[2px_2px_0px_#7f1d28]/30 transition-transform active:translate-x-0.5 active:translate-y-0.5"
                 >
-                  Xem chi tiết
-                </Button>
-                <Button
-                  variant="shadow"
-                  size="sm"
-                  onClick={() => handleDownloadForm(form._id, form.mainContent)}
-                  aria-label={`Tải về: ${form.mainContent}`}
-                  style={{ backgroundColor: "#28a745", color: "#fff" }}
-                  disabled={downloading === form._id}
+                  Xem mẫu
+                </button>
+                <a
+                  href="#"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    toast.info(`Bắt đầu tải xuống biểu mẫu: ${doc.title}`);
+                  }}
+                  className="px-4 py-2 border-2 border-stone-800 dark:border-[#e56776] bg-[#7f1d28] dark:bg-[#e56776] hover:bg-[#a12836] dark:hover:bg-[#f08592] text-white dark:text-stone-950 text-xs font-mono font-bold uppercase tracking-wider flex items-center gap-1.5 shadow-[3px_3px_0px_#4a0d14] transition-transform active:translate-x-0.5 active:translate-y-0.5"
                 >
-                  {downloading === form._id ? "Đang tải..." : "Tải về"}
-                </Button>
+                  <ArrowDownToLine className="w-3.5 h-3.5" />
+                  Tải DOCX
+                </a>
               </div>
             </div>
           ))}
         </div>
+      </div>
 
-        {meta.total > 0 && (
-          <nav className={styles.pagination} aria-label="Phân trang">
-            <Button
-              variant={page === 1 ? "bordered" : "shadow"}
-              size="md"
-              disabled={page === 1}
-              onClick={() => handlePageChange(page - 1)}
-              className={
-                page === 1
-                  ? "bg-gray-600 text-gray-400"
-                  : "bg-blue-600 hover:bg-blue-700 text-white"
-              }
-            >
-              Trang trước
-            </Button>
-            <span className={styles.pageInfo}>
-              Trang {meta.page} / {Math.ceil(meta.total / meta.limit)}
-            </span>
-            <Button
-              variant={
-                page === Math.ceil(meta.total / meta.limit) ? "bordered" : "shadow"
-              }
-              size="md"
-              disabled={page === Math.ceil(meta.total / meta.limit)}
-              onClick={() => handlePageChange(page + 1)}
-              className={
-                page === Math.ceil(meta.total / meta.limit)
-                  ? "bg-gray-600 text-gray-400"
-                  : "bg-blue-600 hover:bg-blue-700 text-white"
-              }
-            >
-              Trang sau
-            </Button>
-          </nav>
-        )}
+      {/* Preview Modal Styled as Official Legal Parchment */}
+      {selectedDoc && (
+        <div className="fixed inset-0 z-50 bg-stone-950/80 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-[#fcf8f3] dark:bg-[#1d1215] border-2 border-stone-900 dark:border-[#e56776] max-w-xl w-full p-6 space-y-4 shadow-[8px_8px_0px_#7f1d28] text-xs">
+            <div className="flex items-start justify-between gap-4 pb-3 border-b-2 border-stone-800 dark:border-stone-700">
+              <div className="space-y-0.5">
+                <span className="font-mono text-[10px] text-[#7f1d28] dark:text-[#e56776] font-bold">
+                  [XEM TRƯỚC HỒ SƠ: {selectedDoc.code}]
+                </span>
+                <h3 className="font-serif font-bold text-stone-900 dark:text-stone-50 text-sm sm:text-base leading-tight">
+                  {selectedDoc.title}
+                </h3>
+              </div>
+              <button
+                onClick={() => setSelectedDoc(null)}
+                className="p-1 border border-stone-800 dark:border-stone-700 hover:bg-stone-200 dark:hover:bg-stone-800 text-stone-800 dark:text-stone-200"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
 
-<Modal isOpen={!!selectedForm} onClose={handleCloseModal}>
-  <ModalContent
-    style={{
-      backgroundColor: 'rgba(30, 41, 59, 0.95)', // Dark slate background with slight transparency
-      color: '#e2e8f0', // Light gray text for readability
-      borderRadius: '8px',
-      paddingTop: '100px',
-      maxWidth: '700px',
-      margin: 'auto',
-      boxShadow: '0 8px 24px rgba(0, 0, 0, 0.5)', // Slightly stronger shadow for depth
-      backdropFilter: 'blur(10px)', // Keep the blur effect
-    }}
-  >
-    <ModalHeader
-      style={{
-        fontWeight: '700',
-        fontSize: '1.75rem',
-        borderBottom: '2px solid #3b82f6', // Keep the blue border but slightly muted
-        paddingBottom: '10px',
-        marginBottom: '20px',
-        color: '#3b82f6', // Match the blue to the border
-      }}
-    >
-      Chi tiết biểu mẫu
-    </ModalHeader>
-    <ModalBody style={{ textAlign: 'left' }}>
-      {selectedForm && (
-        <>
-          <h2
-            style={{
-              fontSize: '1.5rem',
-              marginBottom: '15px',
-              fontWeight: 'bold',
-              color: '#e2e8f0', // Light gray for the title to match the body text
-            }}
-          >
-            {selectedForm.mainContent}
-          </h2>
-          <p style={{ marginBottom: '12px', lineHeight: 1.6 }}>
-            <strong>Mô tả:</strong> {selectedForm.description}
-          </p>
-          <p style={{ marginBottom: '12px', lineHeight: 1.6 }}>
-            <strong>Loại:</strong> {typeDocumentVietnamese}
-          </p>
-          <p style={{ marginBottom: '12px', lineHeight: 1.6 }}>
-            <strong>Ngày tạo:</strong>{' '}
-            {new Date(selectedForm.createdAt).toLocaleDateString('vi-VN')}
-          </p>
-          <p style={{ marginBottom: '12px', lineHeight: 1.6 }}>
-            <strong>Ngày cập nhật:</strong>{' '}
-            {new Date(selectedForm.updatedAt).toLocaleDateString('vi-VN')}
-          </p>
-        </>
+            <div className="p-5 border-2 border-stone-300 dark:border-stone-700 bg-stone-50 dark:bg-[#130b0e] text-stone-800 dark:text-stone-300 font-mono space-y-2.5 max-h-64 overflow-y-auto leading-relaxed text-[11px]">
+              <p className="text-center font-bold text-stone-900 dark:text-stone-100 uppercase">CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM</p>
+              <p className="text-center text-[10px]">Độc lập - Tự do - Hạnh phúc</p>
+              <div className="w-16 h-0.5 bg-stone-400 mx-auto my-1"></div>
+              <p className="text-center pt-2 font-bold text-stone-900 dark:text-stone-100 uppercase font-serif text-xs">{selectedDoc.title}</p>
+              <p className="pt-2">Kính gửi: Tòa án nhân dân có thẩm quyền...</p>
+              <p>{selectedDoc.desc}</p>
+              <p className="text-stone-500 italic">[Nội dung biểu mẫu pháp lý chuẩn hóa đầy đủ các điều khoản và thông tin đối tượng đương sự]</p>
+            </div>
+
+            <div className="flex items-center justify-end gap-2 pt-2 border-t border-stone-300 dark:border-stone-700">
+              <button
+                onClick={() => setSelectedDoc(null)}
+                className="px-3.5 py-1.5 border-2 border-stone-800 dark:border-stone-700 text-stone-800 dark:text-stone-200 font-mono font-bold uppercase hover:bg-stone-200 dark:hover:bg-stone-800"
+              >
+                Đóng
+              </button>
+              <a
+                href="#"
+                onClick={(e) => {
+                  e.preventDefault();
+                  toast.info(`Bắt đầu tải xuống: ${selectedDoc.title}`);
+                  setSelectedDoc(null);
+                }}
+                className="px-4 py-1.5 border-2 border-stone-800 dark:border-[#e56776] bg-[#7f1d28] dark:bg-[#e56776] hover:bg-[#a12836] dark:hover:bg-[#f08592] text-white dark:text-stone-950 font-mono font-bold uppercase flex items-center gap-1.5 shadow-[2px_2px_0px_#4a0d14]"
+              >
+                <Download className="w-3.5 h-3.5" />
+                Tải về DOCX
+              </a>
+            </div>
+          </div>
+        </div>
       )}
-    </ModalBody>
-    <ModalFooter style={{ justifyContent: 'flex-end' }}>
-      <Button
-        variant="bordered"
-        onClick={handleCloseModal}
-        style={{
-          borderColor: '#3b82f6', // Blue border to match the theme
-          color: '#3b82f6', // Blue text
-          padding: '8px 20px',
-          fontWeight: '600',
-          borderRadius: '5px',
-          cursor: 'pointer',
-          transition: 'background-color 0.3s, color 0.3s',
-        }}
-        onMouseEnter={(e) => {
-          e.currentTarget.style.backgroundColor = '#3b82f6';
-          e.currentTarget.style.color = '#ffffff'; // White text on hover
-        }}
-        onMouseLeave={(e) => {
-          e.currentTarget.style.backgroundColor = 'transparent';
-          e.currentTarget.style.color = '#3b82f6'; // Back to blue text
-        }}
-      >
-        Đóng
-      </Button>
-    </ModalFooter>
-  </ModalContent>
-</Modal>
-      </main>
     </div>
   );
 }
