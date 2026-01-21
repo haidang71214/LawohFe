@@ -23,7 +23,6 @@ import { Plus, FileText, Calendar } from "lucide-react";
 
 import { axiosInstance } from "@/fetchApi"; // Ensure this is correctly defined
 import { addToast } from "@heroui/toast";
-import './index.css';
 import { ETypeLawyer } from "@/components/common/EnumCommon"; // Import enum từ file chung
 
 interface Form {
@@ -47,8 +46,9 @@ export default function ManagerFormIndex() {
   useEffect(() => {
     const fetchForms = async () => {
       try {
-        const response = await axiosInstance.get("/form/heheForm");
-        setForms(response.data.data || []);
+        const response = await axiosInstance.get("/form");
+        const raw = response.data?.data?.items || response.data?.data || (Array.isArray(response.data) ? response.data : []);
+        setForms(raw);
       } catch (error: any) {
         console.error("Error fetching forms:", error);
         addToast({
@@ -112,9 +112,9 @@ export default function ManagerFormIndex() {
       setDescription("");
       setType(ETypeLawyer.INSURANCE);
       setIsModalOpen(false);
-
-      const updatedResponse = await axiosInstance.get("/form/heheForm");
-      setForms(updatedResponse.data.data || []);
+      const updatedResponse = await axiosInstance.get("/form");
+      const raw = updatedResponse.data?.data?.items || updatedResponse.data?.data || (Array.isArray(updatedResponse.data) ? updatedResponse.data : []);
+      setForms(raw);
     } catch (error: any) {
       console.error("Error:", error);
       addToast({
