@@ -13,7 +13,8 @@ import {
   CardBody,
   Button,
 } from '@heroui/react';
-import { LOGIN_USER } from '@/constant/enum';
+import { addToast } from '@heroui/toast';
+import { LOGIN_USER } from '@/constants/enum';
 import { axiosInstance } from '@/fetchApi';
 
 interface UserInfo {
@@ -43,12 +44,13 @@ export default function AdminDashboard() {
       const token = localStorage.getItem(LOGIN_USER);
       if (!token) return;
 
-      const res = await axiosInstance.get('/payment/getPaymentForAdmin', {
+      const res = await axiosInstance.get('/payment/admin', {
         headers: { Authorization: `Bearer ${token}` },
       });
       console.log(res);
       
-      setPayments(res.data?.data || []);
+      const raw = res.data?.data?.items || res.data?.data || (Array.isArray(res.data) ? res.data : []);
+      setPayments(raw);
     } catch (err) {
       console.error('Lỗi lấy danh sách payment:', err);
     } finally {
@@ -71,11 +73,19 @@ export default function AdminDashboard() {
       });
      
       
-      alert('✅ Đã trả tiền cho luật sư!');
+      addToast({
+        title: 'Thanh toán thành công',
+        description: 'Đã giải ngân tiền cho luật sư.',
+        color: 'success',
+      });
       await fetchPayments();
     } catch (err) {
       console.error('Refund lỗi:', err);
-      alert('❌ Refund thất bại!');
+      addToast({
+        title: 'Thất bại',
+        description: 'Giải ngân cho luật sư không thành công.',
+        color: 'danger',
+      });
     } finally {
       setRefundingId(null);
     }
