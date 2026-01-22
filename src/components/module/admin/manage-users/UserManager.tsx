@@ -33,7 +33,7 @@ interface User {
   password?: string;
 }
 
-export default function QuanliUser() {
+export default function UserManager() {
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -66,8 +66,9 @@ export default function QuanliUser() {
     async function fetchUsers() {
       try {
         setLoading(true);
-        const response = await axiosInstance.get('/users/getAllUser');
-        const mappedData = response.data.map((item: any) => ({
+        const response = await axiosInstance.get('/users');
+        const rawList = response.data?.data?.items || response.data?.data || (Array.isArray(response.data) ? response.data : []);
+        const mappedData = rawList.map((item: any) => ({
           _id: item._id,
           name: item.name,
           email: item.email,
@@ -165,7 +166,7 @@ export default function QuanliUser() {
       }
 
       const response = await axiosInstance.patch(
-        `/users/adminUpdateUser/${selectedUser._id}`,
+        `/users/${selectedUser._id}`,
         formPayload,
         {
           headers: {
@@ -174,7 +175,7 @@ export default function QuanliUser() {
         }
       );
 
-      const updatedUser = response.data;
+      const updatedUser = response.data?.data || response.data;
       setUsers((prev) =>
         prev.map((user) => (user._id === selectedUser._id ? { ...user, ...updatedUser } : user))
       );
@@ -224,7 +225,7 @@ export default function QuanliUser() {
         }
       );
 
-      const newUser = response.data;
+      const newUser = response.data?.data || response.data;
       setUsers((prev) => [...prev, newUser]);
 
       addToast({
@@ -254,11 +255,11 @@ export default function QuanliUser() {
   const handleChangeToLawyer = async (id: any) => {
     try {
       const response = await axiosInstance.patch(
-        `/lawyer/adminCreatelawyer/${id}`,
+        `/lawyer/${id}`,
         {
           description: "string",
           type_lawyer: ["INSURANCE", "FAMILY"],
-          sub_type_lawyers: ["bảo hiểm nhân thọ", "cái gì gì đó"],
+          sub_type_lawyers: ["Bảo hiểm nhân thọ", "Bảo hiểm tài sản"],
           experienceYear: 0,
           certificate: ["string"],
         },
