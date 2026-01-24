@@ -1,25 +1,439 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
+:root,
+.dark {
+   --background: #08090a;
+   --foreground: #f7f8f8;
+   --muted: #8a8f98;
+   --muted-foreground: #62666d;
+   --border: #222326;
+   --border-subtle: #191a1d;
+   --surface: #0d0e11;
+   --surface-hover: #141519;
+   --accent: #5e6ad2;
+   --accent-hover: #4f5bbf;
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+.light {
+   --background: #f8fafc;
+   --foreground: #0f172a;
+   --muted: #475569;
+   --muted-foreground: #64748b;
+   --border: #e2e8f0;
+   --border-subtle: #f1f5f9;
+   --surface: #ffffff;
+   --surface-hover: #f8fafc;
+   --accent: #4f46e5;
+   --accent-hover: #4338ca;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Merriweather
+   background-color: var(--background);
+   color: var(--foreground);
+   -webkit-font-smoothing: antialiased;
+   -moz-osx-font-smoothing: grayscale;
+}
+
+/* =========================================================
+   LIGHT THEME GLOBAL ADAPTATION LAYER
+   Transforms all Obsidian / Linear Dark elements into clean,
+   crisp, modern Light theme across 100% of components.
+   ========================================================= */
+
+html.light,
+html.light body {
+   background-color: #f8fafc !important;
+   color: #0f172a !important;
+}
+
+/* Main background overrides */
+html.light .bg-\[\#08090a\],
+html.light .bg-\[\#08090a\]\/90,
+html.light .bg-\[\#08090a\]\/80,
+html.light .bg-\[\#0a0b0d\],
+html.light .bg-\[\#0b0c0e\] {
+   background-color: #f8fafc !important;
+   color: #0f172a !important;
+}
+
+/* Card & Surface container overrides */
+html.light .bg-\[\#0d0e11\],
+html.light .bg-\[\#0d0e11\]\/80,
+html.light .bg-\[\#0d0e11\]\/60,
+html.light .bg-\[\#0d0e11\]\/40,
+html.light .bg-\[\#121316\]\/60,
+html.light .bg-\[\#121316\]\/80 {
+   background-color: #ffffff !important;
+}
+
+/* Sub-card, input, chip & hover container overrides */
+html.light .bg-\[\#121316\],
+html.light .bg-\[\#141519\],
+html.light .bg-\[\#16171b\],
+html.light .bg-\[\#191a1e\],
+html.light .bg-\[\#1c1d22\],
+html.light .bg-\[\#1e2025\],
+html.light .bg-\[\#202127\],
+html.light .bg-\[\#1a1c22\],
+html.light .bg-\[\#222326\] {
+   background-color: #f1f5f9 !important;
+}
+
+/* Hover state overrides */
+html.light .hover\:bg-\[\#141519\]:hover,
+html.light .hover\:bg-\[\#121316\]:hover,
+html.light .hover\:bg-\[\#16171b\]:hover,
+html.light .hover\:bg-\[\#1a1b20\]:hover,
+html.light .hover\:bg-\[\#202127\]:hover,
+html.light .hover\:bg-\[\#25272e\]:hover,
+html.light .hover\:bg-\[\#1f2024\]:hover,
+html.light .hover\:bg-\[\#22252c\]:hover {
+   background-color: #e2e8f0 !important;
+}
+
+/* Border overrides */
+html.light .border-\[\#1f2023\],
+html.light .border-\[\#1f2024\],
+html.light .border-\[\#222326\],
+html.light .border-\[\#26282e\],
+html.light .border-\[\#2a2c34\],
+html.light .border-\[\#2a2b32\],
+html.light .border-\[\#2e3036\],
+html.light .border-\[\#2e3038\],
+html.light .border-\[\#33353a\],
+html.light .border-b-\[\#222326\],
+html.light .border-t-\[\#1f2024\],
+html.light .border-t-\[\#191a1d\],
+html.light .border-t-\[\#1f2023\],
+html.light .border-b-\[\#1f2023\],
+html.light .border-b-\[\#1f2024\],
+html.light .border-r-\[\#1f2023\],
+html.light .border-l-\[\#222326\] {
+   border-color: #e2e8f0 !important;
+}
+
+/* Divide borders */
+html.light .divide-\[\#191a1d\] > * + *,
+html.light .divide-\[\#1c1d22\] > * + *,
+html.light .divide-\[\#222326\] > * + * {
+   border-color: #e2e8f0 !important;
+}
+
+/* Text color overrides */
+html.light .text-\[\#f7f8f8\] {
+   color: #0f172a !important;
+}
+
+html.light .text-\[\#8a8f98\] {
+   color: #475569 !important;
+}
+
+html.light .text-\[\#62666d\] {
+   color: #64748b !important;
+}
+
+/* Hover text overrides in Light Mode - prevent text fading to white */
+html.light .hover\:text-\[\#f7f8f8\]:hover,
+html.light .group:hover .group-hover\:text-\[\#f7f8f8\],
+html.light .group-hover\:text-\[\#f7f8f8\] {
+   color: #4f46e5 !important;
+}
+
+html.light .hover\:text-\[\#8a8f98\]:hover {
+   color: #0f172a !important;
+}
+
+html.light .hover\:text-\[\#62666d\]:hover {
+   color: #334155 !important;
+}
+
+/* Badge contrast enhancements in Light Mode */
+html.light .text-indigo-400 {
+   color: #4f46e5 !important;
+}
+html.light .bg-indigo-500\/15,
+html.light .bg-indigo-500\/10,
+html.light .bg-\[\#5e6ad2\]\/10 {
+   background-color: #eef2ff !important;
+}
+html.light .border-indigo-500\/30,
+html.light .border-\[\#5e6ad2\]\/20 {
+   border-color: #c7d2fe !important;
+}
+html.light .text-emerald-400 {
+   color: #059669 !important;
+}
+html.light .bg-emerald-500\/15,
+html.light .bg-emerald-500\/10 {
+   background-color: #ecfdf5 !important;
+}
+html.light .border-emerald-500\/30,
+html.light .border-emerald-500\/20 {
+   border-color: #a7f3d0 !important;
+}
+html.light .text-amber-400 {
+   color: #d97706 !important;
+}
+html.light .bg-amber-500\/15,
+html.light .bg-amber-500\/10 {
+   background-color: #fffbeb !important;
+}
+html.light .border-amber-500\/30,
+html.light .border-amber-500\/20 {
+   border-color: #fde68a !important;
+}
+html.light .text-rose-400 {
+   color: #e11d48 !important;
+}
+html.light .bg-rose-500\/15,
+html.light .bg-rose-500\/10 {
+   background-color: #fff1f2 !important;
+}
+html.light .border-rose-500\/30,
+html.light .border-rose-500\/20 {
+   border-color: #fecdd3 !important;
+}
+
+/* Form inputs, selects, textareas in Light Mode */
+html.light input,
+html.light select,
+html.light textarea {
+   background-color: #ffffff !important;
+   border-color: #cbd5e1 !important;
+   color: #0f172a !important;
+}
+
+html.light input:focus,
+html.light select:focus,
+html.light textarea:focus {
+   border-color: #4f46e5 !important;
+   box-shadow: 0 0 0 1px #4f46e5 !important;
+}
+
+html.light input::placeholder,
+html.light textarea::placeholder {
+   color: #94a3b8 !important;
+}
+
+/* Tables in Light Mode */
+html.light thead {
+   background-color: #f1f5f9 !important;
+   color: #475569 !important;
+}
+
+html.light tbody tr:hover {
+   background-color: #f8fafc !important;
+}
+
+/* Header & Sidebar Navigation in Light Mode */
+html.light header {
+   background-color: rgba(255, 255, 255, 0.95) !important;
+   border-color: #e2e8f0 !important;
+}
+
+html.light aside {
+   background-color: #ffffff !important;
+   border-color: #e2e8f0 !important;
+}
+
+html.light footer {
+   background-color: #f8fafc !important;
+   border-color: #e2e8f0 !important;
+}
+
+/* Modals & Dropdown Popovers */
+html.light .shadow-2xl,
+html.light .shadow-xl {
+   box-shadow:
+      0 20px 25px -5px rgba(0, 0, 0, 0.08),
+      0 8px 10px -6px rgba(0, 0, 0, 0.04) !important;
+}
+
+/* Shadows and glows */
+html.light .linear-glow {
+   box-shadow:
+      0 0 0 1px #e2e8f0,
+      0 10px 30px rgba(0, 0, 0, 0.06);
+}
+
+html.light .linear-glow-active {
+   box-shadow:
+      0 0 0 1px #4f46e5,
+      0 8px 30px rgba(79, 70, 229, 0.15);
+}
+
+html.light .interactive-card:hover {
+   border-color: #cbd5e1 !important;
+   box-shadow:
+      0 10px 25px -5px rgba(0, 0, 0, 0.06),
+      0 8px 10px -6px rgba(0, 0, 0, 0.04);
+}
+
+/* Scrollbars in Light Mode */
+html.light ::-webkit-scrollbar-track {
+   background: #f8fafc;
+}
+html.light ::-webkit-scrollbar-thumb {
+   background: #cbd5e1;
+}
+html.light ::-webkit-scrollbar-thumb:hover {
+   background: #94a3b8;
+}
+
+/* Primary buttons in Light Mode: crisp contrast */
+html.light .bg-\[\#f7f8f8\] {
+   background-color: #0f172a !important;
+   color: #ffffff !important;
+}
+
+html.light .hover\:bg-\[\#e1e2e5\]:hover {
+   background-color: #1e293b !important;
+}
+
+/* Linear Hairline & Glow Utilities */
+.linear-border {
+   border: 1px solid var(--border);
+}
+
+.linear-border-subtle {
+   border: 1px solid var(--border-subtle);
+}
+
+.linear-surface {
+   background-color: var(--surface);
+}
+
+.linear-surface-hover:hover {
+   background-color: var(--surface-hover);
+}
+
+.linear-glow {
+   box-shadow:
+      0 0 0 1px #222326,
+      0 8px 40px rgba(0, 0, 0, 0.6);
+}
+
+.linear-glow-active {
+   box-shadow:
+      0 0 0 1px #5e6ad2,
+      0 8px 40px rgba(94, 106, 210, 0.2);
+}
+
+/* Micro Animations for Linear Admin Experience */
+@keyframes opacityFadeIn {
+   from {
+      opacity: 0;
+   }
+   to {
+      opacity: 1;
+   }
+}
+
+@keyframes modalPop {
+   from {
+      opacity: 0;
+      transform: scale(0.96) translateY(4px);
+   }
+   to {
+      opacity: 1;
+      transform: scale(1) translateY(0);
+   }
+}
+
+@keyframes pulseSubtle {
+   0%,
+   100% {
+      opacity: 1;
+   }
+   50% {
+      opacity: 0.45;
+   }
+}
+
+@keyframes shimmer {
+   0% {
+      transform: translateX(-100%);
+   }
+   100% {
+      transform: translateX(100%);
+   }
+}
+
+.animate-fade-in {
+   animation: fadeInUp 0.22s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.animate-modal-pop {
+   animation: modalPop 0.22s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.animate-pulse-subtle {
+   animation: pulseSubtle 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+.animate-shimmer {
+   animation: shimmer 1.8s ease-in-out infinite;
+}
+
+/* Interactive Micro-Interactions */
+.interactive-card {
+   transition:
+      transform 0.2s cubic-bezier(0.16, 1, 0.3, 1),
+      border-color 0.15s ease,
+      box-shadow 0.2s ease;
+}
+.interactive-card:hover {
+   transform: translateY(-1.5px);
+   border-color: #2e3036;
+   box-shadow: 0 8px 24px -8px rgba(0, 0, 0, 0.5);
+}
+
+.interactive-button {
+   transition:
+      transform 0.1s ease,
+      background-color 0.15s ease,
+      opacity 0.15s ease;
+}
+.interactive-button:active {
+   transform: scale(0.975);
+}
+
+/* Custom Scrollbar (Dark Default) */
+::-webkit-scrollbar {
+   width: 6px;
+   height: 6px;
+}
+::-webkit-scrollbar-track {
+   background: #08090a;
+}
+::-webkit-scrollbar-thumb {
+   background: #222326;
+   border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+   background: #33353a;
+}
+
+/* Toast Notification Super-Priority Layer (Always Above All Modals & Backdrops) */
+div[data-slot="toast-container"],
+[data-slot="toast"],
+[data-slot="toast-region"],
+.heroui-toast-container,
+[aria-label*="Notification"],
+[aria-label*="Thông báo"],
+div:has(> [data-slot="toast"]),
+div[tabindex="-1"]:has([data-slot="toast"]),
+div[data-slot="toast-region"] {
+   position: fixed !important;
+   z-index: 2147483647 !important;
+   pointer-events: auto !important;
+}
+
+[data-slot="toast"] {
+   position: relative !important;
+   z-index: 2147483647 !important;
+   opacity: 1 !important;
+   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35) !important;
 }
