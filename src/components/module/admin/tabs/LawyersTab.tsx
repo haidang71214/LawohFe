@@ -122,7 +122,11 @@ export const LawyersTab: React.FC = () => {
       // Emit real-time notification via Socket
       try {
         const targetUrl = URL_SOCKET || 'http://localhost:3300';
-        const socket = io(targetUrl, { transports: ['polling'] });
+        const socket = io(targetUrl, {
+          transports: ['polling', 'websocket'],
+          auth: { userId: id },
+          query: { userId: id },
+        });
         socket.emit('notify-lawyer-request-status', {
           userId: id,
           status: 'approved',
@@ -169,7 +173,11 @@ export const LawyersTab: React.FC = () => {
       // Emit real-time notification via Socket
       try {
         const targetUrl = URL_SOCKET || 'http://localhost:3300';
-        const socket = io(targetUrl, { transports: ['polling'] });
+        const socket = io(targetUrl, {
+          transports: ['polling', 'websocket'],
+          auth: { userId: rejectingId },
+          query: { userId: rejectingId },
+        });
         socket.emit('notify-lawyer-request-status', {
           userId: rejectingId,
           status: 'rejected',

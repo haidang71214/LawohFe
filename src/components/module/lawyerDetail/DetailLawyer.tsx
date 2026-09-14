@@ -157,7 +157,11 @@ export default function DetailLawyer({ id }: DetailLawyerProps) {
       // Emit real-time notification to lawyer via Socket
       try {
         const targetUrl = URL_SOCKET || 'http://localhost:3300';
-        const socket = io(targetUrl, { transports: ['polling'] });
+        const socket = io(targetUrl, {
+          transports: ['polling', 'websocket'],
+          auth: { userId: clientId },
+          query: { userId: clientId },
+        });
         socket.emit('notify-new-booking', {
           lawyerId: id,
           clientId,

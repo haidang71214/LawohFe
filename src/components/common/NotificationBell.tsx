@@ -292,7 +292,7 @@ export default function NotificationBell() {
     const isSecure = targetUrl.startsWith('https');
 
     const socket = io(targetUrl, {
-      transports: ['polling'],
+      transports: ['polling', 'websocket'],
       secure: isSecure,
       reconnectionAttempts: 5,
       auth: {
