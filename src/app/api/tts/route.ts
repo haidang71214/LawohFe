@@ -100,7 +100,7 @@ export async function POST(req: NextRequest) {
           });
         }
       }
-    } catch (omniErr) {
+    } catch  {
       // OmniVoice microservice is offline or timed out, proceed to neural fallback
       console.log('[TTS API] OmniVoice offline, using neural fallback engine.');
     }

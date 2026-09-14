@@ -1,11 +1,11 @@
 'use client';
 
 import React from 'react';
-import Hero from '@/components/module/hero/Hero';
+import Hero from '@/components/module/Hero/Hero';
 import Services from '@/components/Services';
 import HomeVideoSection from '@/components/module/home/HomeVideoSection';
-import LawyerRanking from '@/components/module/lawyerRanking/LawyerRanking';
-import Blog from '@/components/module/blog/Blog';
+import LawyerRanking from '@/components/module/LawyerRanking/LawyerRanking';
+import Blog from '@/components/module/Blog/Blog';
 
 const HomePage = () => {
   return (
