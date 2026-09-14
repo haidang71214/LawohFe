@@ -334,7 +334,7 @@ export const ChatProvider = ({ children }: { children: ReactNode }) => {
     const isSecure = targetUrl.startsWith('https');
 
     const globalSocket = io(targetUrl, {
-      transports: ['websocket', 'polling'],
+      transports: ['polling', 'websocket'],
       secure: isSecure,
       withCredentials: true,
       reconnectionAttempts: 5,
@@ -430,7 +430,7 @@ export const ChatProvider = ({ children }: { children: ReactNode }) => {
     console.log('[Socket Room] Initializing room socket for conversation:', currentConversationId, 'User:', myId, 'URL:', targetUrl);
 
     const newSocket = io(targetUrl, {
-      transports: ['websocket', 'polling'],
+      transports: ['polling', 'websocket'],
       secure: isSecure,
       withCredentials: true,
       reconnectionAttempts: 5,

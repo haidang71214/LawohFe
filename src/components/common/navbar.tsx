@@ -17,6 +17,7 @@ import {
 } from 'lucide-react';
 import webStorageClient from '@/utils/webStorageClient';
 import { useLanguage } from '@/i18n/LanguageContext';
+import { useGetMeQuery } from '@/store/queries/auth';
 import { useChat } from './chatContext';
 import ThemeLanguageControls from './ThemeLanguageToggle';
 import NotificationBell from './NotificationBell';
@@ -27,7 +28,7 @@ const Navbar: React.FC = () => {
   const router = useRouter();
   const { t, language } = useLanguage();
   const isEn = language === 'en';
-  const [user, setUser] = useState<any>(null);
+  const [user, setUser] = useState<any>(() => webStorageClient.getUser());
   const [isMenuOpen, setIsMenuOpen] = useState<boolean>(false);
   const [isDropdownOpen, setIsDropdownOpen] = useState<boolean>(false);
   const { isDrawerOpen, openDrawer, closeDrawer, unreadChatCount } = useChat();
@@ -35,10 +36,21 @@ const Navbar: React.FC = () => {
   const navContainerRef = useRef<HTMLElement>(null);
   const mobileMenuRef = useRef<HTMLDivElement>(null);
 
+  const hasToken = typeof window !== 'undefined' ? Boolean(webStorageClient.getToken()) : false;
+  const { data: meResponse } = useGetMeQuery(undefined, {
+    skip: !hasToken,
+    refetchOnMountOrArgChange: true,
+  });
+
   useEffect(() => {
-    const currentUser = webStorageClient.getUser();
-    setUser(currentUser);
-  }, [pathname]);
+    if (meResponse?.data) {
+      setUser(meResponse.data);
+      webStorageClient.setUser(meResponse.data);
+    } else {
+      const currentUser = webStorageClient.getUser();
+      setUser(currentUser);
+    }
+  }, [meResponse, pathname]);
 
   const handleLogout = () => {
     webStorageClient.logout();

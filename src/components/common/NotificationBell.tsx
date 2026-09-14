@@ -162,7 +162,9 @@ export default function NotificationBell() {
   const dropdownRef = useRef<HTMLDivElement>(null);
   const loadMoreRef = useRef<HTMLDivElement>(null);
 
-  const { data: meResponse } = useGetMeQuery();
+  const { data: meResponse } = useGetMeQuery(undefined, {
+    refetchOnMountOrArgChange: true,
+  });
   const currentUser: any = meResponse?.data || null;
 
   const getActiveUserId = () => {
@@ -292,7 +294,7 @@ export default function NotificationBell() {
     const isSecure = targetUrl.startsWith('https');
 
     const socket = io(targetUrl, {
-      transports: ['websocket', 'polling'],
+      transports: ['polling', 'websocket'],
       secure: isSecure,
       withCredentials: true,
       reconnectionAttempts: 5,

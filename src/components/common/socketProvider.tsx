@@ -20,8 +20,16 @@ export default function SocketProvider({
 }: Readonly<{ children: React.ReactNode }>) {
   const [socket, setSocket] = useState<Socket>();
   const [isConnected, setIsConnected] = useState<boolean>(false);
-  const { data: meResponse } = useGetMeQuery();
+  const { data: meResponse } = useGetMeQuery(undefined, {
+    refetchOnMountOrArgChange: true,
+  });
   const currentUser: any = meResponse?.data || null;
+
+  useEffect(() => {
+    if (meResponse?.data) {
+      webStorageClient.setUser(meResponse.data);
+    }
+  }, [meResponse]);
 
   const getUserId = () => {
     if (currentUser?._id || currentUser?.id) return currentUser._id || currentUser.id;
@@ -38,7 +46,7 @@ export default function SocketProvider({
     const targetUrl = URL_SOCKET || 'http://localhost:3300';
     const isSecure = targetUrl.startsWith('https');
     const newSocket = io(targetUrl, {
-      transports: ['websocket', 'polling'],
+      transports: ['polling', 'websocket'],
       secure: isSecure,
       withCredentials: true,
       reconnectionAttempts: 5,

@@ -123,7 +123,7 @@ export const LawyersTab: React.FC = () => {
       try {
         const targetUrl = URL_SOCKET || 'http://localhost:3300';
         const socket = io(targetUrl, {
-          transports: ['websocket', 'polling'],
+          transports: ['polling', 'websocket'],
           withCredentials: true,
           auth: { userId: id },
           query: { userId: id },
@@ -175,7 +175,7 @@ export const LawyersTab: React.FC = () => {
       try {
         const targetUrl = URL_SOCKET || 'http://localhost:3300';
         const socket = io(targetUrl, {
-          transports: ['websocket', 'polling'],
+          transports: ['polling', 'websocket'],
           withCredentials: true,
           auth: { userId: rejectingId },
           query: { userId: rejectingId },

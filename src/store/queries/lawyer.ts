@@ -55,7 +55,7 @@ export const lawyerApi = baseApi.injectEndpoints({
         method: 'POST',
         body,
       }),
-      invalidatesTags: ['Lawyer'],
+      invalidatesTags: ['User', 'Lawyer'],
     }),
   }),
 });
