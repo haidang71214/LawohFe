@@ -5,14 +5,10 @@ import {
   X,
   Award,
   UploadCloud,
-  FileText,
-  Briefcase,
   Building2,
-  Calendar,
-  AlertCircle,
   CheckCircle2,
 } from 'lucide-react';
-import { useUpdateLawyerMeMutation } from '@/store/queries/lawyer';
+import { useRequestLawyerMutation } from '@/store/queries/lawyer';
 import { useLanguage } from '@/i18n/LanguageContext';
 import toast from '@/lib/toast';
 
@@ -38,13 +34,12 @@ const LAWYER_SPECIALTIES = [
 export const RequestLawyerModal: React.FC<RequestLawyerModalProps> = ({
   isOpen,
   onClose,
-  currentUser,
   onSuccess,
 }) => {
   const { language } = useLanguage();
   const isEn = language === 'en';
 
-  const [updateLawyerMe, { isLoading }] = useUpdateLawyerMeMutation();
+  const [requestLawyer, { isLoading }] = useRequestLawyerMutation();
 
   const [specialty, setSpecialty] = useState('CIVIL');
   const [experienceYear, setExperienceYear] = useState<number>(3);
@@ -97,7 +92,7 @@ export const RequestLawyerModal: React.FC<RequestLawyerModalProps> = ({
         formData.append('images', file);
       });
 
-      await updateLawyerMe(formData).unwrap();
+      await requestLawyer(formData).unwrap();
       toast.success(
         isEn ? 'Verification request sent' : 'Gửi yêu cầu xác minh thành công',
         isEn

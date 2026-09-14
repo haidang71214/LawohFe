@@ -1,4 +1,4 @@
-import { lawyerEndpoints } from '@/constants/endpoints';
+import { lawyerEndpoints, userEndpoints } from '@/constants/endpoints';
 import { baseApi } from '../base';
 import {
   LawyerResponse,
@@ -48,6 +48,15 @@ export const lawyerApi = baseApi.injectEndpoints({
       }),
       invalidatesTags: ['Lawyer'],
     }),
+    // Endpoint dành cho USER thường gửi đơn xin lên luật sư
+    requestLawyer: builder.mutation<any, FormData>({
+      query: (body) => ({
+        url: userEndpoints.REQUEST_LAWYER,
+        method: 'POST',
+        body,
+      }),
+      invalidatesTags: ['Lawyer'],
+    }),
   }),
 });
 
@@ -58,4 +67,5 @@ export const {
   useLazyFilterLawyersQuery,
   useUpdateLawyerMeMutation,
   useUpdateLawyerByAdminMutation,
+  useRequestLawyerMutation,
 } = lawyerApi;
