@@ -82,14 +82,17 @@ export const RequestLawyerModal: React.FC<RequestLawyerModalProps> = ({
 
     try {
       const formData = new FormData();
-      formData.append('typeLawyer', specialty);
+      const fullDescription = lawFirm.trim()
+        ? `Đơn vị công tác: ${lawFirm.trim()}\n${bio.trim()}`
+        : bio.trim();
+
+      formData.append('description', fullDescription);
       formData.append('experienceYear', experienceYear.toString());
+      formData.append('type_lawyer', specialty);
       formData.append('company', lawFirm.trim());
-      formData.append('bio', bio.trim());
-      formData.append('isAccept', 'false'); // pending verification
 
       certificateFiles.forEach((file) => {
-        formData.append('images', file);
+        formData.append('certificate_files', file);
       });
 
       await requestLawyer(formData).unwrap();
