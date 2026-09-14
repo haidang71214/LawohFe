@@ -38,9 +38,11 @@ export default function SocketProvider({
     const targetUrl = URL_SOCKET || 'http://localhost:3300';
     const isSecure = targetUrl.startsWith('https');
     const newSocket = io(targetUrl, {
-      transports: ['polling', 'websocket'],
+      transports: ['websocket', 'polling'],
       secure: isSecure,
+      withCredentials: true,
       reconnectionAttempts: 5,
+      reconnectionDelay: 1000,
       timeout: 10000,
       auth: {
         userId: currentUserId,

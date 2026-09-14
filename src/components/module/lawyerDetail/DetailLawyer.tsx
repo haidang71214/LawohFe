@@ -158,7 +158,8 @@ export default function DetailLawyer({ id }: DetailLawyerProps) {
       try {
         const targetUrl = URL_SOCKET || 'http://localhost:3300';
         const socket = io(targetUrl, {
-          transports: ['polling', 'websocket'],
+          transports: ['websocket', 'polling'],
+          withCredentials: true,
           auth: { userId: clientId },
           query: { userId: clientId },
         });
