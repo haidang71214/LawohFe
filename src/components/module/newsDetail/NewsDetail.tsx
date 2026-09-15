@@ -162,6 +162,16 @@ export default function NewsDetail({ news, currentUser, onRefresh }: NewsDetailP
   const renderGazetteContent = () => {
     const usedImageIndices = new Set<number>();
     
+    // Check if content already contains explicit [image:1] tag
+    const hasExplicitImage1 = /\[image:\s*1\s*\]/i.test(content);
+
+    // If first image is not explicitly inlined in markdown, use it as the top Hero Featured Cover Image
+    let featuredCoverImage: string | null = null;
+    if (!hasExplicitImage1 && allImages.length > 0) {
+      featuredCoverImage = allImages[0];
+      usedImageIndices.add(0);
+    }
+    
     // Split into paragraphs / blocks
     const rawParagraphs = content.split(/\n\s*\n/);
 
@@ -244,13 +254,13 @@ export default function NewsDetail({ news, currentUser, onRefresh }: NewsDetailP
       );
     });
 
-    // Append any supplemental images that weren't inlined via [image:n]
+    // Append any supplemental images that weren't inlined via [image:n] or top cover
     const supplementalImages = allImages.filter((_, idx) => !usedImageIndices.has(idx));
 
-    return { elements, supplementalImages };
+    return { elements, supplementalImages, featuredCoverImage };
   };
 
-  const { elements, supplementalImages } = renderGazetteContent();
+  const { elements, supplementalImages, featuredCoverImage } = renderGazetteContent();
 
   return (
     <article className="space-y-8 bg-white dark:bg-[#1c1814] border-2 border-stone-800 dark:border-stone-700 shadow-[6px_6px_0px_#6d4123] dark:shadow-[6px_6px_0px_#df9b63] p-6 sm:p-10 font-sans">
@@ -459,6 +469,17 @@ export default function NewsDetail({ news, currentUser, onRefresh }: NewsDetailP
       {cleanSpeechText && (
         <div className="my-4">
           <TextToSpeech text={cleanSpeechText} title={title} />
+        </div>
+      )}
+
+      {/* Featured Cover Image on Top */}
+      {featuredCoverImage && (
+        <div className="border-2 border-stone-800 dark:border-stone-700 bg-stone-100 dark:bg-[#141210] overflow-hidden shadow-[4px_4px_0px_#6d4123] dark:shadow-[4px_4px_0px_#df9b63] my-4">
+          <img
+            src={featuredCoverImage}
+            alt={title}
+            className="w-full max-h-[520px] object-cover"
+          />
         </div>
       )}
 
