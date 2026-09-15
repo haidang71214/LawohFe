@@ -87,12 +87,43 @@ const playNotificationChime = () => {
   } catch {}
 };
 
-const mapBackendNotification = (item: any, userRole: string): SystemNotification => {
+const mapBackendNotification = (item: any, userRole: string, activeUserId?: string): SystemNotification => {
   const notifType = String(item.type || 'SYSTEM').toUpperCase();
-  let link = userRole === 'lawyer' ? '/bookingLawyer' : '/myBooking';
+  const notifTitle = String(item.title || '');
+  const notifMsg = String(item.content || item.message || '');
+  let link = userRole === 'lawyer' ? '/bookingListLawyer' : '/bookingList';
 
-  if (item.metadata?.link || item.metadata?.target_url) {
-    link = item.metadata.link || item.metadata.target_url;
+  // Extract lawyerId for redirection to their profile
+  const lawyerId =
+    item.metadata?.lawyerId ||
+    item.metadata?.lawyer_id ||
+    item.metadata?.userId ||
+    item.metadata?.user_id ||
+    item.metadata?.id ||
+    item.metadata?._id ||
+    item.lawyerId ||
+    item.userId ||
+    activeUserId ||
+    '';
+
+  const isLawyerApproval =
+    notifType.includes('LAWYER_APPROV') ||
+    notifTitle.toLowerCase().includes('phê duyệt') ||
+    notifTitle.toLowerCase().includes('hồ sơ luật sư') ||
+    notifMsg.toLowerCase().includes('phê duyệt thành công') ||
+    notifMsg.toLowerCase().includes('cấp quyền luật sư');
+
+  if (isLawyerApproval) {
+    link = lawyerId ? `/lawyerDetail/${lawyerId}` : '/lawyers';
+  } else if (item.metadata?.link || item.metadata?.target_url || item.link) {
+    link = item.metadata?.link || item.metadata?.target_url || item.link;
+  } else if (
+    notifType.includes('LAWYER_REQUEST') ||
+    notifType.includes('REQUEST_LAWYER') ||
+    notifType.includes('LAWYER_REGISTRATION') ||
+    notifType.includes('BECOME_LAWYER')
+  ) {
+    link = userRole === 'admin' ? '/admin?tab=lawyers' : '/updateLawyerDetails';
   } else if (notifType.includes('ARTICLE') || notifType.includes('NEWS') || notifType.includes('POST')) {
     const articleId =
       item.metadata?.articleId ||
@@ -101,22 +132,50 @@ const mapBackendNotification = (item: any, userRole: string): SystemNotification
       item.metadata?.news_id ||
       item.metadata?.id ||
       item.metadata?._id;
-    link = articleId ? `/newsDetail/${articleId}` : '/newsSelf';
+    if (userRole === 'admin' && notifType.includes('PENDING')) {
+      link = '/admin?tab=news';
+    } else {
+      link = articleId ? `/newsDetail/${articleId}` : '/newsSelf';
+    }
   } else if (notifType.includes('VIDEO')) {
-    link = '/videoSelf';
+    link = userRole === 'admin' && notifType.includes('PENDING') ? '/admin?tab=videos' : '/videoSelf';
   } else if (notifType.includes('CHAT') || notifType.includes('MESSAGE')) {
     link = '/';
-  } else if (notifType.includes('LAWYER_APPROV')) {
-    link = '/lawyers';
   } else if (notifType.includes('LAWYER_REJECT')) {
     link = '/updateLawyerDetails';
   } else if (notifType.includes('PAYMENT')) {
-    link = userRole === 'lawyer' ? '/bookingLawyer' : '/myBooking';
+    link = userRole === 'admin' ? '/admin?tab=payments' : userRole === 'lawyer' ? '/bookingListLawyer' : '/bookingList';
   }
 
-  // Normalize legacy or mismatched news routes to match app router /newsDetail/[id]
+  // Normalize legacy or mismatched routes to exact app router endpoints
   if (link) {
-    if (/^\/news\/[a-zA-Z0-9_-]+$/.test(link)) {
+    // If it's an approval notification with link set to /lawyers or /updateLawyerDetails, redirect to lawyer detail page
+    if (isLawyerApproval && (link === '/lawyers' || link === '/updateLawyerDetails' || link === '/lawyer')) {
+      if (lawyerId) {
+        link = `/lawyerDetail/${lawyerId}`;
+      }
+    } else if (
+      link === '/admin/lawyer-requests' ||
+      link.includes('/admin/lawyer-requests') ||
+      link === '/admin/lawyers' ||
+      link.includes('lawyer-requests')
+    ) {
+      link = '/admin?tab=lawyers';
+    } else if (link === '/admin/news') {
+      link = '/admin?tab=news';
+    } else if (link === '/admin/videos' || link === '/admin/video') {
+      link = '/admin?tab=videos';
+    } else if (link === '/admin/users') {
+      link = '/admin?tab=users';
+    } else if (link === '/admin/payments') {
+      link = '/admin?tab=payments';
+    } else if (link === '/admin/forms') {
+      link = '/admin?tab=forms';
+    } else if (link === '/bookingLawyer') {
+      link = '/bookingListLawyer';
+    } else if (link === '/myBooking') {
+      link = '/bookingList';
+    } else if (/^\/news\/[a-zA-Z0-9_-]+$/.test(link)) {
       link = link.replace('/news/', '/newsDetail/');
     } else if (/^\/newsPage\/[a-zA-Z0-9_-]+$/.test(link)) {
       link = link.replace('/newsPage/', '/newsDetail/');
@@ -230,7 +289,7 @@ export default function NotificationBell() {
         }
 
         const mappedList: SystemNotification[] = rawList.map((item: any) =>
-          mapBackendNotification(item, userRole)
+          mapBackendNotification(item, userRole, currentUserId)
         );
 
         if (isAppend) {
@@ -264,7 +323,7 @@ export default function NotificationBell() {
         setIsLoadingInitial(false);
       }
     },
-    [userRole]
+    [userRole, currentUserId]
   );
 
   // Initial load once on mount/login
@@ -317,7 +376,7 @@ export default function NotificationBell() {
       const data = rawData?.data || rawData;
       if (!data) return;
 
-      const notifItem = mapBackendNotification(data, userRole);
+      const notifItem = mapBackendNotification(data, userRole, currentUserId);
       playNotificationChime();
       setBackendUnreadCount((prev) => (prev !== null ? prev + 1 : 1));
 
@@ -330,6 +389,7 @@ export default function NotificationBell() {
     socket.on('lawyer-request-status-changed', (data: any) => {
       if (data.userId === currentUserId) {
         const isAppr = data.status === 'approved';
+        const targetLawyerId = data.lawyerId || data.userId || currentUserId;
         const notifItem: SystemNotification = {
           id: `notif-lawyer-${Date.now()}`,
           type: isAppr ? 'lawyer_approved' : 'lawyer_rejected',
@@ -339,7 +399,7 @@ export default function NotificationBell() {
             : `Hồ sơ của bạn đã bị từ chối. Lý do: ${data.reason || 'Chưa đạt tiêu chuẩn kiểm duyệt.'}`,
           createdAt: new Date().toISOString(),
           isRead: false,
-          link: isAppr ? '/lawyers' : '/updateLawyerDetails',
+          link: isAppr ? (targetLawyerId ? `/lawyerDetail/${targetLawyerId}` : '/lawyers') : '/updateLawyerDetails',
         };
 
         playNotificationChime();

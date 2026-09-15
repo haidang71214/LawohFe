@@ -28,6 +28,31 @@ const nextConfig: NextConfig = {
         destination: '/newsPage',
         permanent: false,
       },
+      {
+        source: '/admin/lawyer-requests',
+        destination: '/admin?tab=lawyers',
+        permanent: false,
+      },
+      {
+        source: '/admin/lawyer_requests',
+        destination: '/admin?tab=lawyers',
+        permanent: false,
+      },
+      {
+        source: '/admin/lawyers',
+        destination: '/admin?tab=lawyers',
+        permanent: false,
+      },
+      {
+        source: '/bookingLawyer',
+        destination: '/bookingListLawyer',
+        permanent: false,
+      },
+      {
+        source: '/myBooking',
+        destination: '/bookingList',
+        permanent: false,
+      },
     ];
   },
 };
