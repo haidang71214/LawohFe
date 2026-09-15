@@ -93,7 +93,7 @@ const Footer = () => {
                 </Link>
               </li>
               <li>
-                <Link href="/document/DN" className="hover:text-[#d95327] dark:hover:text-[#d95327] hover:underline underline-offset-4 flex items-center gap-1.5 transition-colors">
+                <Link href="/document/ALL" className="hover:text-[#d95327] dark:hover:text-[#d95327] hover:underline underline-offset-4 flex items-center gap-1.5 transition-colors">
                   <span className="text-stone-400">›</span>
                   {isEn ? 'Legal Templates' : 'Biểu mẫu pháp lý'}
                 </Link>

@@ -45,7 +45,7 @@ export default function ServicesPage() {
             'Hướng dẫn kê khai hồ sơ theo chuẩn Tòa án',
           ],
       cta: isEn ? 'Browse Documents' : 'Truy cập Biểu mẫu',
-      href: '/document/DN',
+      href: '/document/ALL',
       primary: false,
       stamp: isEn ? 'PUBLIC REPO' : 'CÔNG KHAI',
     },

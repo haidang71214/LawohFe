@@ -64,7 +64,7 @@ const Navbar: React.FC = () => {
     { name: t('nav.lawyers', 'Luật sư'), href: '/lawyers' },
     { name: t('nav.services', 'Dịch vụ & Biểu phí'), href: '/services' },
     { name: t('nav.videos', 'Băng hình'), href: '/videos' },
-    { name: t('nav.documents', 'Biểu mẫu'), href: '/document/DN' },
+    { name: t('nav.documents', 'Biểu mẫu'), href: '/document/ALL' },
     { name: t('nav.news', 'Án lệ & Tin tức'), href: '/newsPage' },
   ];
 
@@ -100,10 +100,10 @@ const Navbar: React.FC = () => {
       remove(links);
       animate(links, {
         opacity: [0, 1],
-        translateY: [-12, 0],
-        duration: 500,
-        delay: stagger(50, { start: 280 }),
-        ease: 'outBack(1.3)',
+        translateY: [-8, 0],
+        duration: 400,
+        delay: stagger(60, { start: 300 }),
+        ease: 'outQuad',
       });
     }
 
@@ -111,29 +111,28 @@ const Navbar: React.FC = () => {
       remove(actions);
       animate(actions, {
         opacity: [0, 1],
-        scale: [0.9, 1],
-        translateY: [-10, 0],
-        duration: 450,
-        delay: stagger(60, { start: 500 }),
-        ease: 'outBack(1.4)',
+        scale: [0.95, 1],
+        duration: 400,
+        delay: stagger(60, { start: 450 }),
+        ease: 'outBack(1.2)',
       });
     }
-  }, [pathname, language]);
+  }, [pathname]);
 
-  // Anime.js slide-in stagger for Mobile Menu
+  // Mobile menu entrance stagger
   useEffect(() => {
-    if (isMenuOpen && mobileMenuRef.current) {
-      const items = mobileMenuRef.current.querySelectorAll('.mobile-nav-item');
-      if (items.length > 0) {
-        remove(items);
-        animate(items, {
-          opacity: [0, 1],
-          translateX: [-16, 0],
-          duration: 350,
-          delay: stagger(35),
-          ease: 'outQuart',
-        });
-      }
+    if (!isMenuOpen || !mobileMenuRef.current) return;
+
+    const items = mobileMenuRef.current.querySelectorAll('.mobile-nav-item');
+    if (items.length > 0) {
+      remove(items);
+      animate(items, {
+        opacity: [0, 1],
+        translateX: [-12, 0],
+        duration: 350,
+        delay: stagger(50, { start: 50 }),
+        ease: 'outQuad',
+      });
     }
   }, [isMenuOpen]);
 
@@ -163,7 +162,12 @@ const Navbar: React.FC = () => {
             {/* Desktop Navigation Links */}
             <nav className="hidden md:flex items-center gap-6 text-xs font-mono font-bold tracking-wider uppercase">
               {navLinks.map((link) => {
-                const isActive = pathname === link.href;
+                const isActive =
+                  link.href === '/'
+                    ? pathname === '/'
+                    : link.href.startsWith('/document')
+                    ? pathname.startsWith('/document')
+                    : pathname === link.href || pathname.startsWith(`${link.href}/`);
                 return (
                   <Link
                     key={link.href}
@@ -415,16 +419,28 @@ const Navbar: React.FC = () => {
             </div>
           )}
 
-          {navLinks.map((link) => (
-            <Link
-              key={link.href}
-              href={link.href}
-              onClick={() => setIsMenuOpen(false)}
-              className="mobile-nav-item opacity-0 block py-2 text-stone-700 dark:text-stone-300 hover:text-[#d95327] uppercase tracking-wider font-bold border-b border-stone-200 dark:border-stone-800"
-            >
-              {link.name}
-            </Link>
-          ))}
+          {navLinks.map((link) => {
+            const isActive =
+              link.href === '/'
+                ? pathname === '/'
+                : link.href.startsWith('/document')
+                ? pathname.startsWith('/document')
+                : pathname === link.href || pathname.startsWith(`${link.href}/`);
+            return (
+              <Link
+                key={link.href}
+                href={link.href}
+                onClick={() => setIsMenuOpen(false)}
+                className={`mobile-nav-item opacity-0 block py-2 uppercase tracking-wider font-bold border-b border-stone-200 dark:border-stone-800 ${
+                  isActive
+                    ? 'text-[#d95327] dark:text-[#e26d46]'
+                    : 'text-stone-700 dark:text-stone-300 hover:text-[#d95327]'
+                }`}
+              >
+                {link.name}
+              </Link>
+            );
+          })}
           <div className="pt-3 flex gap-2">
             {user ? (
               <button

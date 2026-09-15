@@ -87,7 +87,7 @@ const Services: React.FC = () => {
         : 'Hệ thống văn bản, hợp đồng mẫu chuẩn theo quy định pháp luật có hướng dẫn điền chi tiết.',
       icon: FileCheck,
       tag: '06',
-      href: '/document/DN',
+      href: '/document/ALL',
       category: 'DOCUMENT',
       stat: isEn ? 'LEGAL FORMS' : 'BIỂU MẪU ĐIỆN TỬ',
     },

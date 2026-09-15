@@ -8,12 +8,9 @@ import {
   Loader2,
   Volume2,
   VolumeX,
-  User,
   Gauge,
   AlertCircle,
   Radio,
-  RotateCw,
-  Sparkles,
   Volume1,
 } from 'lucide-react';
 import { useLanguage } from '@/i18n/LanguageContext';
@@ -354,43 +351,19 @@ export default function TextToSpeech({ text, title, className = '' }: TextToSpee
         </div>
       </div>
 
-      {/* Voice & Speed Config Row */}
-      <div className="flex flex-wrap items-center justify-between gap-3 pb-3 mb-3 border-b border-dashed border-stone-300 dark:border-stone-800 font-mono text-xs">
-        {/* Voice Selector */}
-        <div className="flex items-center gap-1.5 flex-wrap">
-          <span className="text-[11px] text-stone-500 font-bold uppercase flex items-center gap-1">
-            <User className="w-3 h-3 text-[#6d4123] dark:text-[#df9b63]" />
-            <span>Giọng đọc:</span>
-          </span>
-          {voices.map((v) => (
-            <button
-              key={v.id}
-              type="button"
-              onClick={() => handleVoiceChange(v.id)}
-              className={`px-2.5 py-1 border text-[11px] font-bold uppercase transition-all cursor-pointer ${
-                selectedVoice === v.id
-                  ? 'border-stone-800 bg-[#6d4123] dark:bg-[#df9b63] text-white dark:text-stone-950 shadow-[1px_1px_0px_#000]'
-                  : 'border-stone-300 dark:border-stone-700 bg-white dark:bg-[#1c1814] text-stone-700 dark:text-stone-300 hover:bg-stone-200'
-              }`}
-              title={v.desc}
-            >
-              🎙️ {v.name} ({v.gender})
-            </button>
-          ))}
-        </div>
-
-        {/* Speed Selector */}
+      {/* Speed Config Row */}
+      <div className="flex items-center justify-between gap-3 pb-3 mb-3 border-b border-dashed border-stone-300 dark:border-stone-800 font-mono text-xs">
         <div className="flex items-center gap-1.5">
           <span className="text-[11px] text-stone-500 font-bold uppercase flex items-center gap-1">
             <Gauge className="w-3 h-3 text-[#6d4123] dark:text-[#df9b63]" />
-            <span>Tốc độ:</span>
+            <span>{isEn ? 'Speed:' : 'Tốc độ:'}</span>
           </span>
           {SPEEDS.map((s) => (
             <button
               key={s.value}
               type="button"
               onClick={() => handleSpeedChange(s.value)}
-              className={`px-2 py-0.5 border text-[11px] font-bold transition-all cursor-pointer ${
+              className={`px-2.5 py-0.5 border text-[11px] font-bold transition-all cursor-pointer ${
                 selectedSpeed === s.value
                   ? 'border-stone-800 bg-stone-900 text-white dark:bg-stone-100 dark:text-stone-900 shadow-[1px_1px_0px_#000]'
                   : 'border-stone-300 dark:border-stone-700 bg-white dark:bg-[#1c1814] text-stone-700 dark:text-stone-300 hover:bg-stone-200'
